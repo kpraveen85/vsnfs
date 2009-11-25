@@ -25,6 +25,7 @@ typedef int Bool
 #define VSNFS_PORT	6789
 #define VSNFS_MAXDATA	8192
 #define VSNFS_FHSIZE	64
+#define VSNFS_MAXNAMLEN	255
 
 enum vsnfs_ftype {
 	VSNFSNON  = 0,
