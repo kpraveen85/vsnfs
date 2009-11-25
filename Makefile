@@ -1,5 +1,5 @@
 obj-m += vsnfs.o
-vsnfs-objs := vsnfsClient.o vsnfsMount.o module.o super.o
+vsnfs-objs := vsnfsClient.o vsnfsMount.o module.o
 
 EXTRA_CFLAGS= -Wall -Werror
 

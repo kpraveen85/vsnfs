@@ -10,6 +10,7 @@
 
 #include <linux/module.h>
 #include "vsnfs.h"
+#include "vsnfsMount.h"
 
 /* Some callers of 'ls' use the file block size returned by a stat of a
  * directory as the size of buffer supplied to 'ls'. Sizes smaller that 4096
@@ -44,3 +45,23 @@ struct vsnfs_server {
 	unsigned int    		bsize;
 };
 
+/*
+ * vsnfs/file.c
+ */
+
+extern const struct inode_operations vsnfs_file_inode_operations;
+extern const struct file_operations vsnfs_file_operations;
+
+/*
+ * vsnfs/dir.c
+ */
+
+extern const struct inode_operations vsnfs_dir_inode_operations;
+extern const struct file_operations vsnfs_dir_operations;
+extern const struct dentry_operations vsnfs_dentry_operations;
+
+/*
+ * vsnfs/read_write.c
+ */
+
+#define TO_BE_FILLED 0

@@ -34,6 +34,12 @@
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
+	struct vsnfs_server *server = NULL;
+	struct super_block *sb;
+	struct vsnfs_mount_data *data;
+	struct vsnfs_fh *mntfh;
+	struct dentry *mntroot;
+
 	printk("Inside get_sb\n");
 	return 0;
 }
