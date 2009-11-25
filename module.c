@@ -10,3 +10,30 @@
  *
  */
 
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/unistd.h>
+#include <linux/uaccess.h>
+#include <linux/sched.h>
+#include <linux/fs.h>
+#include <linux/errno.h>
+#include <linux/namei.h>
+
+static int
+__init vsnfs_init(void)
+{
+	if (!VSNFSClientInit())
+		return -1;
+}
+
+static void
+__exit vsnfs_cleanup(void)
+{
+	VSNFSClientCleanup();
+}
+
+module_init(vsnfs_init);
+module_exit(vsnfs_cleanup);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("KB");
