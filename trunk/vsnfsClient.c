@@ -28,5 +28,4 @@
 #include <asm/system.h>
 
 #include "vsnfsClient.h"
-#include "vsnfsMount.h"
 #include "vsnfs.h"
