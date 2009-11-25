@@ -14,16 +14,16 @@
 #include <linux/kernel.h>
 #include <linux/unistd.h>
 #include <linux/uaccess.h>
-#include <linux/sched.h>
-#include <linux/fs.h>
 #include <linux/errno.h>
-#include <linux/namei.h>
+
+#include "vsnfsClient.h"
 
 static int
 __init vsnfs_init(void)
 {
 	if (!VSNFSClientInit())
 		return -1;
+	return 0;
 }
 
 static void

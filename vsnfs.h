@@ -7,20 +7,8 @@
  *
  *(C) Karthik Balaji <findkb@gmail.com>
  */
-#ifndef _LINUX_VSNFS_H
-#define _LINUX_VSNFS_H
-
-#ifndef Bool
-typedef int Bool
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
+#ifndef _VSNFS_H
+#define _VSNFS_H
 
 #define VSNFS_PORT	6789
 #define VSNFS_MAXDATA	8192
