@@ -8,10 +8,11 @@
  * (C) Karthik Balaji <findkb@gmail.com>
  *
  */
+#ifndef _VSNFSMOUNT_H
+#define _VSNFSMOUNT_H
 
 #include <linux/in.h>
 #include "vsnfs.h"
-
 /* Structure passed from user-space to kernel-space
  * during vsnfs mount
  */
@@ -21,17 +22,14 @@ struct vsnfs_mount_data {
 	struct 	vsnfs_fh old_root;
 	int 	flags;
 	int 	timeout;
-	int		rsize;
-	int 	wsize;
 	struct 	sockaddr_in addr;
 	char 	hostname[VSNFS_MAXNAMLEN + 1];
 	int 	namlen;
-	unsigned int 	bsize;
 	struct 	vsnfs_fh root;
 };
 
-/* Bits in the flags field */
+extern int
+vsnfs_parse_mount_options(char *options, const struct vsnfs_mount_data *data,
+							struct vsnfs_fh *mntfh, const char *dev_name);
 
-#define VSNFS_MOUNT_SOFT	0x0001
-#define VSNFS_MOUNT_TCP		0x0040
-#define VSNFS_FLAG_MASK		0xFFFF
+#endif

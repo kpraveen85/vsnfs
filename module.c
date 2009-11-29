@@ -16,6 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/errno.h>
 
+#include "vsnfs.h"
 #include "vsnfsClient.h"
 
 static int
