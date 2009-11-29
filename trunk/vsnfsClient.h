@@ -7,10 +7,9 @@
  *
  *(C) Karthik Balaji <findkb@gmail.com>
  */
-
+#ifndef _VSNFSCLIENT_H
+#define _VSNFSCLIENT_H
 #include <linux/module.h>
-#include "vsnfs.h"
-#include "vsnfsMount.h"
 
 /* Some callers of 'ls' use the file block size returned by a stat of a
  * directory as the size of buffer supplied to 'ls'. Sizes smaller that 4096
@@ -65,3 +64,5 @@ extern const struct dentry_operations vsnfs_dentry_operations;
  */
 
 #define TO_BE_FILLED 0
+
+#endif

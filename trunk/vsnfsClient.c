@@ -9,12 +9,9 @@
  *
  */
 
-#include <linux/sched.h>
-#include <linux/time.h>
 #include <linux/kernel.h>
-#include <linux/mm.h>
+#include <linux/module.h>
 #include <linux/string.h>
-#include <linux/stat.h>
 #include <linux/errno.h>
 #include <linux/unistd.h>
 #include <linux/sunrpc/clnt.h>
@@ -28,20 +25,24 @@
 
 #include <asm/system.h>
 
-#include "vsnfsClient.h"
 #include "vsnfs.h"
+#include "vsnfsClient.h"
+#include "vsnfsMount.h"
 
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
-	struct vsnfs_server *server = NULL;
-	struct super_block *sb;
-	struct vsnfs_mount_data *data;
+	int ret = 0;
 	struct vsnfs_fh *mntfh;
-	struct dentry *mntroot;
-
+	struct vsnfs_mount_data *data;
 	printk("Inside get_sb\n");
-	return 0;
+
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
+	mntfh = kzalloc(sizeof(*mntfh), GFP_KERNEL);
+
+	/* Validate and copy the mount data */
+	ret = vsnfs_parse_mount_options((char *)raw_data, data, mntfh, dev_name);
+	return ret;
 }
 
 static void vsnfs_kill_sb(struct super_block *sb)
