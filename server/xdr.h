@@ -1,21 +1,6 @@
 #ifndef XDR_H
 #define XDR_H
 
-int vsnfssvc_decode_void(struct svc_rqst *, __be32 *, void *);
-int vsnfssvc_encode_void(struct svc_rqst *, __be32 *, void *);
-
-/* For read Operation */
-
-int vsnfssvc_decode_readargs(struct svc_rqst *, __be32 *,
-        			   struct vsnfsd_readargs *);
-int vsnfssvc_encode_readres(struct svc_rqst *, __be32 *, 
-			            struct vsnfsd_readres *);
-
-/* For Readdir Operation */
-
-int vsnfssvc_decode_readdirargs(struct svc_rqst *, __be32 *, struct vsnfsd_readdirargs *);
-int vsnfssvc_encode_readdirres(struct svc_rqst *, __be32 *, struct vsnfsd_readdirres *);
-
 struct vsnfsd_void { int dummy; };
 
 struct vsnfsd_readargs {
@@ -68,5 +53,19 @@ union vsnfsd_xdrstore {
 };
 
 #define VSNFS_SVC_XDRSIZE	sizeof(union vsnfsd_xdrstore)
+
+
+int vsnfssvc_decode_void(struct svc_rqst *, __be32 *, void *);
+int vsnfssvc_encode_void(struct svc_rqst *, __be32 *, void *);
+
+/* For read Operation */
+
+int vsnfssvc_decode_readargs(struct svc_rqst *, __be32 *, struct vsnfsd_readargs *);
+int vsnfssvc_encode_readres(struct svc_rqst *, __be32 *, struct vsnfsd_readres *);
+
+/* For Readdir Operation */
+
+int vsnfssvc_decode_readdirargs(struct svc_rqst *, __be32 *, struct vsnfsd_readdirargs *);
+int vsnfssvc_encode_readdirres(struct svc_rqst *, __be32 *, struct vsnfsd_readdirres *);
 
 #endif

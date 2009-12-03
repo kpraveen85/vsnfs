@@ -2,7 +2,6 @@
 #define _VSNFSD_H
 
 #define VSNFS_NRSERVS 1 /* no of threads */
-#define VSNFS_NRPROCS 9 /* no of procedures supported in VSNFS */
 
 /* Block size of VFS V2 specification. In V3 and V4 it's configured based on the system memory */
 #define VSNFSSVC_MAXBLKSIZE (8*1024)
