@@ -29,6 +29,22 @@
 #include "vsnfsClient.h"
 #include "vsnfsMount.h"
 
+/* RPC registration details */
+
+struct rpc_version vsnfs_version = &vsnfs_version1;
+
+struct rpc_program vsnfs_program = {
+	.name		= "vsnfs"
+	.number		= VSNFS_PROGRAM,
+	.nrvers		= 1,
+	.version	= vsnfs_version,
+	.stats		= &vsnfs_rpcstat,
+};
+
+struct rpc_stat vsnfs_rpcstat = {
+	.program	= &vsnfs_program
+};
+
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {

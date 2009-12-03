@@ -22,6 +22,21 @@
 #include "vsnfsClient.h"
 #include "vsnfsXdr.h"
 
+vsnfs_proc_get_root(struct nfs_server *server, struct vsnfs_fh *fhandle)
+{
+	int status;
+
+	struct rpc_message msg = {
+		.rpc_proc	= &vsnfs_procedures[VSNFSPROC_GETROOT],
+		.rpc_argp	= fhandle,
+		.rpc_resp	= NULL,
+	}
+    printk("%s: VSNFS call  getroot\n", __func__);
+    status = rpc_call_sync(server->client, &msg, 0);
+    printk("%s: VSNFS reply getroot\n", __func__);
+    return status;
+}
+
 static int
 vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 					unsigned int count, int plus)
@@ -49,9 +64,6 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 
 const struct vsnfs_rpc_ops vsnfs_clientops = {
 	.version		 = 1;
-	.dentry_op		 = &vsnfs_dentry_operations,
-	.dir_inode_ops	 = &vsnfs_dir_inode_operations,
-	.file_inode_ops	 = &vsnfs_file_inode_operations,
 	.getroot		 = vsnfs_proc_get_root,
 	.lookup			 = vsnfs_proc_lookup,
 	.create			 = vsnfs_proc_create,
@@ -59,7 +71,7 @@ const struct vsnfs_rpc_ops vsnfs_clientops = {
 	.mkdir			 = vsnfs_proc_mkdir,
 	.rmdir			 = vsnfs_proc_rmdir,
 	.readdir		 = vsnfs_proc_readdir,
-	.read			 = vsnfs_proc_read_setup,
-	.write			 = vsnfs_proc_write_setup,
+	.read			 = vsnfs_proc_read,
+	.write			 = vsnfs_proc_write,
 };
 

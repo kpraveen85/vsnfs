@@ -57,6 +57,15 @@ vsnfs_xdr_enc_void(struct rpc_rqst *req, __be32 *p, void *dummy)
 	return 0;
 }
 
+/* Encode file handle */
+static int
+vsnfs_xdr_fhandle(struct rpc_rqst *req, __be32 *p, struct vsnfs_fh *fh)
+{
+	p = xdr_encode_fhandle(p, fh);
+	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
+	return 0;
+}
+
 /*
  * Encode arguments to readdir call
  */
@@ -245,9 +254,10 @@ vsnfs_stat_to_errno(int stat)
 	.p_statidx  =  VSNFSPROC_##proc,					\
 	.p_name     =  #proc,						\
 	}
+
 struct rpc_procinfo vsnfs_procedures[] = {
-	PROC(null,			enc_void,		dec_void),
-	PROC(GETROOT,		enc_void,		dec_void),
+	PROC(NULL,			enc_void,		dec_void),
+	PROC(GETROOT,		fhandle,		dec_void),
     PROC(LOOKUP,        diropargs,      diropres),
     PROC(READ,          readargs,       readres),
 	PROC(WRITE,			writeargs,		writeres),
@@ -258,7 +268,7 @@ struct rpc_procinfo vsnfs_procedures[] = {
     PROC(READDIR,       readdirargs,    readdirres),
 };
 
-struct rpc_version vsnfs_version = {
+struct rpc_version vsnfs_version1 = {
 	.number		= 1,
 	.nrprocs	= ARRAY_SIZE(vsnfs_procedures),
 	.procs		= vsnfs_procedures
