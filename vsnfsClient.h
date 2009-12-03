@@ -10,6 +10,8 @@
 #ifndef _VSNFSCLIENT_H
 #define _VSNFSCLIENT_H
 #include <linux/module.h>
+#include <linux/socket.h>
+#include "vsnfs.h"
 
 /* Some callers of 'ls' use the file block size returned by a stat of a
  * directory as the size of buffer supplied to 'ls'. Sizes smaller that 4096
@@ -33,16 +35,17 @@ extern int VSNFSClientCleanup(void);
 /* NFS Client Parameters stored in superblock */
 
 struct vsnfs_server {
-	struct rpc_clnt			*client;	/* RPC client handle */
-	struct vsnfs_rpc_ops	*rpc_ops;	/* VSNFS protocol vector */
-	int 					flags;
+	struct rpc_clnt			*cl_rpcclient;	/* RPC client handle */
+	struct vsnfs_rpc_ops	*cl_rpc_ops;	/* VSNFS protocol vector */
+	int						cl_proto;
+	struct sockaddr_storage cl_addr;		/* server identifier */
+	size_t					cl_addrlen;
+/*	int 					flags; */
 	int     				timeout;
-	int     				rsize;
-	int     				wsize;
 	char    				hostname[VSNFS_MAXNAMLEN + 1];
 	int     				namlen;
-	unsigned int    		bsize;
 };
+
 
 /*
  * vsnfs/file.c
