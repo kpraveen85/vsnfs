@@ -12,6 +12,7 @@
 #include <linux/module.h>
 #include <linux/socket.h>
 #include "vsnfs.h"
+#include "vsnfsXdr.h"
 
 /* Some callers of 'ls' use the file block size returned by a stat of a
  * directory as the size of buffer supplied to 'ls'. Sizes smaller that 4096
@@ -46,6 +47,12 @@ struct vsnfs_server {
 	int     				namlen;
 };
 
+/*
+ * vsnfs/vsnfsXdr.c
+ */
+extern int vsnfs_stat_to_errno(int);
+extern struct rpc_procinfo vsnfs_procedures[];
+extern __be32 *vsnfs_decode_dirent(__be32 *, struct vsnfs_entry *, int);
 
 /*
  * vsnfs/file.c

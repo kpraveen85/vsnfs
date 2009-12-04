@@ -73,5 +73,6 @@ const struct vsnfs_rpc_ops vsnfs_clientops = {
 	.readdir		 = vsnfs_proc_readdir,
 	.read			 = vsnfs_proc_read,
 	.write			 = vsnfs_proc_write,
+	.decode_dirent	 = vsnfs_decode_dirent,
 };
 

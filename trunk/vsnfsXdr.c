@@ -9,22 +9,23 @@
  *
  */
 
+#include <linux/pagemap.h>
 #include "vsnfs.h"
 #include "vsnfsXdr.h"
 
 #define errno_VSNFSERR_IO		EIO
 
-#define VSNFS_fh_sz				8
+#define VSNFS_fhandle_sz		8
 #define VSNFS_filename_sz		(1+(VSNFS_MAXNAMLEN>>2))
 #define VSNFS_path_sz			(1+(VSNFS_MAXPATHLEN>>2))
 #define VSNFS_info_sz			5
 #define VSNFS_entry_sz			(VSNFS_filename_sz+3)
 
 #define VSNFS_enc_void_sz		0
-#define	VSNFS_readdirargs_sz	(VSNFS_fh_sz+2)
+#define	VSNFS_readdirargs_sz	(VSNFS_fhandle_sz+2)
 
 #define VSNFS_dec_void_sz		0
-#define VSNFS_readdirres_sz		(VSNFS_fh_sz+2)
+#define VSNFS_readdirres_sz		(VSNFS_fhandle_sz+2)
 
 /*
  * Common VSNFS XDR functions as inlines
@@ -83,7 +84,7 @@ vsnfs_xdr_readdirargs(struct rpc_rqst *req, __be32 *p, struct vsnfs_readdirargs 
 	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
 
 	/* Inline the page array */
-	replen = (RPC_REPHDRSIZE + auth->au_rslack + NFS_readdirres_sz) << 2;
+	replen = (RPC_REPHDRSIZE + auth->au_rslack + VSNFS_readdirres_sz) << 2;
 	xdr_inline_pages(&req->rq_rcv_buf, replen, args->pages, 0, count);
 	return 0;
 }
@@ -119,15 +120,15 @@ vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 *p, void *dummy)
 	__be32 *end, *entry, *kaddr;
 
 	if ((status = ntohl(*p++)))
-		return nfs_stat_to_errno(status);
+		return vsnfs_stat_to_errno(status);
 
 	hdrlen = (u8 *) p - (u8 *) iov->iov_base;
 	if (iov->iov_len < hdrlen) {
-		dprintk("NFS: READDIR reply header overflowed:"
+		printk("VSNFS: READDIR reply header overflowed:"
 				"length %Zu > %Zu\n", hdrlen, iov->iov_len);
-		return -errno_NFSERR_IO;
+		return -errno_VSNFSERR_IO;
 	} else if (iov->iov_len != hdrlen) {
-		dprintk("NFS: READDIR header is short. iovec will be shifted.\n");
+		printk("VSNFS: READDIR header is short. iovec will be shifted.\n");
 		xdr_shift_buf(rcvbuf, iov->iov_len - hdrlen);
 	}
 
@@ -150,8 +151,8 @@ vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 *p, void *dummy)
 		p++; /* fileid */
 		len = ntohl(*p++);
 		p += XDR_QUADLEN(len) + 1;	/* name plus cookie */
-		if (len > NFS2_MAXNAMLEN) {
-			dprintk("NFS: giant filename in readdir (len 0x%x)!\n",
+		if (len > VSNFS_MAXNAMLEN) {
+			printk("VSNFS: giant filename in readdir (len 0x%x)!\n",
 						len);
 			goto err_unmap;
 		}
@@ -166,7 +167,7 @@ vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 *p, void *dummy)
 	 * those, just set the EOF marker.
 	 */
 	if (!nr && entry[1] == 0) {
-		dprintk("NFS: readdir reply truncated!\n");
+		printk("VSNFS: readdir reply truncated!\n");
 		entry[1] = 1;
 	}
  out:
@@ -184,11 +185,32 @@ vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 *p, void *dummy)
 	 */
 	entry[0] = entry[1] = 0;
 	if (!nr)
-		nr = -errno_NFSERR_IO;
+		nr = -errno_VSNFSERR_IO;
 	goto out;
 err_unmap:
-	nr = -errno_NFSERR_IO;
+	nr = -errno_VSNFSERR_IO;
 	goto out;
+}
+
+__be32 *
+vsnfs_decode_dirent(__be32 *p, struct vsnfs_entry *entry, int plus)
+{
+	if (!*p++) {
+		if (!*p)
+			return ERR_PTR(-EAGAIN);
+		entry->eof = 1;
+		return ERR_PTR(-EBADCOOKIE);
+	}
+
+	entry->ino	  = ntohl(*p++);
+	entry->len	  = ntohl(*p++);
+	entry->name	  = (const char *) p;
+	p		 += XDR_QUADLEN(entry->len);
+	entry->prev_cookie	  = entry->cookie;
+	entry->cookie	  = ntohl(*p++);
+	entry->eof	  = !p[0] && p[1];
+
+	return p;
 }
 
 static struct {
@@ -196,14 +218,11 @@ static struct {
 	int errno;
 } vsnfs_errtbl[] = {
 	{ VSNFS_OK,				0		},
-	{ VSNFSERR_PERM,		-EPERM		},
 	{ VSNFSERR_NOENT,		-ENOENT		},
 	{ VSNFSERR_IO,			-errno_VSNFSERR_IO},
 	{ VSNFSERR_NXIO,		-ENXIO		},
 	{ VSNFSERR_EAGAIN,		-EAGAIN		},
-	{ VSNFSERR_ACCES,		-EACCES		},
 	{ VSNFSERR_EXIST,		-EEXIST		},
-	{ VSNFSERR_XDEV,		-EXDEV		},
 	{ VSNFSERR_NODEV,		-ENODEV		},
 	{ VSNFSERR_NOTDIR,		-ENOTDIR	},
 	{ VSNFSERR_ISDIR,		-EISDIR		},
@@ -212,19 +231,14 @@ static struct {
 	{ VSNFSERR_NOSPC,		-ENOSPC		},
 	{ VSNFSERR_ROFS,		-EROFS		},
 	{ VSNFSERR_MLINK,		-EMLINK		},
+	{ VSNFSERR_OPNOTSUPP	-EOPNOTSUPP },
 	{ VSNFSERR_NAMETOOLONG,	-ENAMETOOLONG	},
 	{ VSNFSERR_NOTEMPTY,	-ENOTEMPTY	},
 	{ VSNFSERR_DQUOT,		-EDQUOT		},
 	{ VSNFSERR_STALE,		-ESTALE		},
 	{ VSNFSERR_REMOTE,		-EREMOTE	},
 	{ VSNFSERR_BADHANDLE,	-EBADHANDLE	},
-	{ VSNFSERR_NOT_SYNC,	-ENOTSYNC	},
-	{ VSNFSERR_BAD_COOKIE,	-EBADCOOKIE	},
-	{ VSNFSERR_NOTSUPP,		-ENOTSUPP	},
-	{ VSNFSERR_TOOSMALL,	-ETOOSMALL	},
-	{ VSNFSERR_SERVERFAULT,	-ESERVERFAULT	},
-	{ VSNFSERR_BADTYPE,		-EBADTYPE	},
-	{ VSNFSERR_JUKEBOX,		-EJUKEBOX	},
+	{ VSNFSERR_BAD_COOKIE	-EBADCOOKIE },
 	{ -1,					-EIO		}
 };
 
@@ -240,7 +254,7 @@ vsnfs_stat_to_errno(int stat)
 		if (vsnfs_errtbl[i].stat == stat)
 			return vsnfs_errtbl[i].errno;
 	}
-	dprintk("vsnfs_stat_to_errno: bad vsnfs status return value: %d\n", stat);
+	printk("vsnfs_stat_to_errno: bad vsnfs status return value: %d\n", stat);
 	return vsnfs_errtbl[i].errno;
 }
 
@@ -258,13 +272,13 @@ vsnfs_stat_to_errno(int stat)
 struct rpc_procinfo vsnfs_procedures[] = {
 	PROC(NULL,			enc_void,		dec_void),
 	PROC(GETROOT,		fhandle,		dec_void),
-    PROC(LOOKUP,        diropargs,      diropres),
-    PROC(READ,          readargs,       readres),
-	PROC(WRITE,			writeargs,		writeres),
-    PROC(CREATE,        createargs,     diropres),
-    PROC(REMOVE,        diropargs,      stat),
-    PROC(MKDIR,         createargs,     diropres),
-    PROC(RMDIR,         diropargs,      stat),
+//	PROC(LOOKUP,        diropargs,      diropres),
+//	PROC(READ,          readargs,       readres),
+//	PROC(WRITE,			writeargs,		writeres),
+//	PROC(CREATE,        createargs,     diropres),
+//	PROC(REMOVE,        diropargs,      stat),
+//	PROC(MKDIR,         createargs,     diropres),
+//	PROC(RMDIR,         diropargs,      stat),
     PROC(READDIR,       readdirargs,    readdirres),
 };
 
