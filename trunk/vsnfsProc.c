@@ -16,14 +16,13 @@
 #include <linux/string.h>
 #include <linux/in.h>
 #include <linux/pagemap.h>
-#include <linux/sunrpc/clnt.h>
 #include <linux/lockd/bind.h>
 #include <linux/fs.h>
 #include "vsnfs.h"
 #include "vsnfsXdr.h"
 
 static int
-vsnfs_proc_get_root(struct nfs_server *server, struct vsnfs_fh *fhandle)
+vsnfs_proc_get_root(struct vsnfs_server *server, struct vsnfs_fh *fhandle)
 {
 	int status;
 
@@ -64,16 +63,16 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 }
 
 const struct vsnfs_rpc_ops vsnfs_clientops = {
-	.version		 = 1;
+	.version		 = 1,
 	.getroot		 = vsnfs_proc_get_root,
-	.lookup			 = vsnfs_proc_lookup,
+/*	.lookup			 = vsnfs_proc_lookup,
 	.create			 = vsnfs_proc_create,
 	.remove			 = vsnfs_proc_remove,
 	.mkdir			 = vsnfs_proc_mkdir,
 	.rmdir			 = vsnfs_proc_rmdir,
-	.readdir		 = vsnfs_proc_readdir,
 	.read			 = vsnfs_proc_read,
-	.write			 = vsnfs_proc_write,
+	.write			 = vsnfs_proc_write, */
+	.readdir		 = vsnfs_proc_readdir,
 	.decode_dirent	 = vsnfs_decode_dirent,
 };
 

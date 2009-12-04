@@ -52,7 +52,7 @@ struct vsnfs_rpc_ops {
 	int		(*rmdir)   (struct inode *, struct qstr *); */
 	int		(*readdir) (struct dentry *, u64, struct page *,
 						unsigned int, int);
-	__be32	(*decode_dirent) (__be32 *, struct vsnfs_entry *, int plus);
+	__be32 *(*decode_dirent) (__be32 *, struct vsnfs_entry *, int plus);
 };
 
 int
