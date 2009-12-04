@@ -17,6 +17,7 @@
 #include <linux/dcache.h>
 #include <linux/gfp.h>
 #include <linux/mm.h>
+#include <linux/sunrpc/debug.h>
 
 #define VSNFS_PROGRAM	 110003
 #define VSNFS_VERSION	 1
@@ -46,13 +47,14 @@ enum vsnfs_stat {
 	VSNFSERR_NOSPC = 28,
 	VSNFSERR_ROFS = 30,
 	VSNFSERR_MLINK = 31,
-	VSNFSERR_OPNOTSUPP = 45,
 	VSNFSERR_NAMETOOLONG = 63,
 	VSNFSERR_NOTEMPTY = 66,
 	VSNFSERR_DQUOT = 69,
 	VSNFSERR_STALE = 70,
 	VSNFSERR_REMOTE = 71,
 	VSNFSERR_BADHANDLE = 72,
+	VSNFSERR_OPNOTSUPP = 95,
+	VSNFSERR_BAD_COOKIE = 10003,
 };
 
 enum vsnfs_ftype {

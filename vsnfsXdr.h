@@ -27,7 +27,7 @@ struct vsnfs_readdirargs {
 	__u32				cookie;
 	unsigned int		count;
 	struct page**		pages;
-}
+};
 
 struct vsnfs_entry {
 	__u64				ino;
@@ -57,7 +57,7 @@ struct vsnfs_rpc_ops {
 };
 
 extern const struct vsnfs_rpc_ops vsnfs_clientops;
-extern struct rpc_version vsnfs_version;
+extern struct rpc_version vsnfs_version1;
 extern struct rpc_program vsnfs_program;
 extern struct rpc_stat vsnfs_rpcstat;
 

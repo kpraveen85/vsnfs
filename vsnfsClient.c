@@ -28,6 +28,7 @@
 #include "vsnfs.h"
 #include "vsnfsClient.h"
 #include "vsnfsMount.h"
+#include "vsnfsXdr.h"
 
 /* RPC registration details */
 
