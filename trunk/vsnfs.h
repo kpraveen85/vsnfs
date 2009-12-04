@@ -17,7 +17,9 @@
 #include <linux/dcache.h>
 #include <linux/gfp.h>
 #include <linux/mm.h>
+#include <linux/socket.h>
 #include <linux/sunrpc/debug.h>
+#include <linux/sunrpc/clnt.h>
 
 #define VSNFS_PROGRAM	 110003
 #define VSNFS_VERSION	 1
@@ -68,6 +70,21 @@ struct vsnfs_fh {
 	unsigned short size;
 	unsigned char data[VSNFS_FHSIZE];
 };
+
+/* NFS Client Parameters stored in superblock */
+
+struct vsnfs_server {
+    struct rpc_clnt         *cl_rpcclient;  /* RPC client handle */
+    struct vsnfs_rpc_ops    *cl_rpc_ops;    /* VSNFS protocol vector */
+    int                     cl_proto;
+    struct sockaddr_storage cl_addr;        /* server identifier */
+    size_t                  cl_addrlen;
+/*  int                     flags; */
+    int                     timeout;
+    char                    hostname[VSNFS_MAXNAMLEN + 1];
+    int                     namlen;
+};
+
 
 #define VSNFS_SERVER(inode)		(&(inode)->i_sb->u.vsnfs_sb.s_server)
 #define VSNFS_CLIENT(inode)		(NFS_SERVER(inode)->client)

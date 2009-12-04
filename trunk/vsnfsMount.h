@@ -12,7 +12,6 @@
 #define _VSNFSMOUNT_H
 
 #include <linux/in.h>
-#include "vsnfs.h"
 /* Structure passed from user-space to kernel-space
  * during vsnfs mount
  */

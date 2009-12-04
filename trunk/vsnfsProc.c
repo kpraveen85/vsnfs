@@ -19,9 +19,10 @@
 #include <linux/sunrpc/clnt.h>
 #include <linux/lockd/bind.h>
 #include <linux/fs.h>
-#include "vsnfsClient.h"
+#include "vsnfs.h"
 #include "vsnfsXdr.h"
 
+static int
 vsnfs_proc_get_root(struct nfs_server *server, struct vsnfs_fh *fhandle)
 {
 	int status;
@@ -30,9 +31,9 @@ vsnfs_proc_get_root(struct nfs_server *server, struct vsnfs_fh *fhandle)
 		.rpc_proc	= &vsnfs_procedures[VSNFSPROC_GETROOT],
 		.rpc_argp	= fhandle,
 		.rpc_resp	= NULL,
-	}
+	};
     printk("%s: VSNFS call  getroot\n", __func__);
-    status = rpc_call_sync(server->client, &msg, 0);
+    status = rpc_call_sync(server->cl_rpcclient, &msg, 0);
     printk("%s: VSNFS reply getroot\n", __func__);
     return status;
 }
