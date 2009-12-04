@@ -29,7 +29,7 @@ vsnfs_prog_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	switch (rqstp->rq_proc) {
 	case VSNFS_PROC_NULL:
 		_xdr_argument = (xdrproc_t) xdr_void;
-		_xdr_result = (xdrproc_t) xdr_int;
+		_xdr_result = (xdrproc_t) xdr_void;
 		local = (char *(*)(char *, struct svc_req *)) vsnfs_proc_null_1_svc;
 		break;
 
