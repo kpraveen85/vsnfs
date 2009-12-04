@@ -26,18 +26,20 @@
 #include <asm/system.h>
 
 #include "vsnfs.h"
+#include "vsnfsXdr.h"
 #include "vsnfsClient.h"
 #include "vsnfsMount.h"
-#include "vsnfsXdr.h"
 
 /* RPC registration details */
 
-struct rpc_version vsnfs_version = &vsnfs_version1;
+static struct rpc_version *vsnfs_version[2] = {
+	[1]					= &vsnfs_version1,
+};
 
 struct rpc_program vsnfs_program = {
-	.name		= "vsnfs"
+	.name		= "vsnfs",
 	.number		= VSNFS_PROGRAM,
-	.nrvers		= 1,
+	.nrvers		= ARRAY_SIZE(vsnfs_version),
 	.version	= vsnfs_version,
 	.stats		= &vsnfs_rpcstat,
 };

@@ -15,8 +15,6 @@
 #include <linux/sunrpc/xdr.h>
 #include <linux/sunrpc/xprt.h>
 #include <linux/mm.h>
-#include "vsnfs.h"
-#include "vsnfsClient.h"
 
 /*
  * Arguements to readdir call (JUST A SAMPLE)
@@ -46,15 +44,23 @@ struct vsnfs_rpc_ops {
 	const struct inode_operations *file_inode_ops;
 
 	int		(*getroot) (struct vsnfs_server *, struct vsnfs_fh *);
-	int		(*lookup)  (struct inode *, struct qstr *, struct vsnfs_fh *);
+/*	int		(*lookup)  (struct inode *, struct qstr *, struct vsnfs_fh *);
 	int		(*create)  (struct inode *, struct dentry *, struct iattr *,
 						int, struct vsnfs_fh *);
 	int		(*remove)  (struct dentry *, struct qstr *);
 	int		(*mkdir)   (struct inode *, struct dentry *, struct iattr *);
-	int		(*rmdir)   (struct inode *, struct qstr *);
+	int		(*rmdir)   (struct inode *, struct qstr *); */
 	int		(*readdir) (struct dentry *, u64, struct page *,
 						unsigned int, int);
+	__be32	(*decode_dirent) (__be32 *, struct vsnfs_entry *, int plus);
 };
+
+int
+vsnfs_stat_to_errno(int stat);
+
+extern int vsnfs_stat_to_errno(int);
+extern struct rpc_procinfo vsnfs_procedures[];
+extern __be32 *vsnfs_decode_dirent(__be32 *, struct vsnfs_entry *, int);
 
 extern const struct vsnfs_rpc_ops vsnfs_clientops;
 extern struct rpc_version vsnfs_version1;

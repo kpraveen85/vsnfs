@@ -12,8 +12,8 @@
 
 #include <linux/types.h>
 #include <linux/parser.h>
-#include "vsnfsMount.h"
 #include "vsnfs.h"
+#include "vsnfsMount.h"
 
 enum { vsnfs_opt_port, vsnfs_opt_ip, vsnfs_opt_err };
 
