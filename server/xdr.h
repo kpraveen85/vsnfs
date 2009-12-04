@@ -1,10 +1,30 @@
 #ifndef XDR_H
 #define XDR_H
 
+
+struct vsnfsd_void { int dummy; };
+
+struct vsnfsd_getrootargs
+{
+  char *path;
+  unsigned int len;
+};
+
+struct vsnfsd_fhandle
+{
+  struct svc_fh fh;
+};
+
+
 int vsnfssvc_decode_void(struct svc_rqst *, __be32 *, void *);
 int vsnfssvc_encode_void(struct svc_rqst *, __be32 *, void *);
 
-struct vsnfsd_void { int dummy; };
+int vsnfssvc_decode_getrootargs(struct svc_rqst *, __be32 *,
+				struct vsnfsd_getrootargs *);
+
+
+int vsnfssvc_encode_fhandle(struct svc_rqst *, __be32 *,
+			    struct vsnfsd_fhandle *);
 
 
 /*
@@ -12,6 +32,7 @@ struct vsnfsd_void { int dummy; };
  */
 union vsnfsd_xdrstore {
 	struct vsnfsd_void null; 
+        struct vsnfsd_getrootargs getroot;
 	/*put all the xdr args here*/
 	/* 
 	struct nfsd_sattrargs	sattr;
