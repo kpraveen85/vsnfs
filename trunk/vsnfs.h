@@ -19,7 +19,12 @@
 #include <linux/mm.h>
 #include <linux/socket.h>
 #include <linux/sunrpc/debug.h>
-#include <linux/sunrpc/clnt.h>
+
+#ifdef VSNFS_DEBUG
+#define vsnfs_trace(type, fmt, arg...) printk(type "%s" fmt, __func__, ## arg)
+#else
+#define vsnfs_trace(type, fmt, arg...)
+#endif
 
 #define VSNFS_PROGRAM	 110003
 #define VSNFS_VERSION	 1
@@ -102,6 +107,10 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 	target->size = source->size;
 	memcpy(target->data, source->data, source->size);
 }
+
+/* list no. of vsnfs procedures here */
+#define NO_OF_VSNFSPROCS 1
+
 
 #define VSNFSPROC_NULL		0
 #define VSNFSPROC_CREATE	1
