@@ -22,7 +22,6 @@ int main( int argc, char* argv[] )
       clnt_perror(clnt, "call failed:");
    }
    clnt_destroy( clnt );
-   printf("result = %d\n",*result_1);
    return 1;
 }
 

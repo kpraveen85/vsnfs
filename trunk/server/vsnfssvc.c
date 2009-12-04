@@ -241,17 +241,14 @@ int
 vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 {
 	struct svc_procedure	*proc;
-#if 0
 	kxdrproc_t		xdr;
 	__be32			nfserr;
 	__be32			*nfserrp;
-#endif	
 
 
 	vsnfs_trace(KERN_DEFAULT, "proc %d\n", rqstp->rq_proc);
 	proc = rqstp->rq_procinfo;
 
-#if 0
 
 	/* Decode arguments */
 	xdr = proc->pc_decode;
@@ -289,7 +286,6 @@ vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 			return 1;
 		}
 	}
-#endif	
 
 	return 1;
 
