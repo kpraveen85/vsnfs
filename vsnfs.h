@@ -18,7 +18,11 @@
 #include <linux/gfp.h>
 #include <linux/mm.h>
 #include <linux/socket.h>
+#include <linux/list.h>
+#include <linux/fs.h>
+#include <linux/bitops.h>
 #include <linux/sunrpc/debug.h>
+#include <linux/sunrpc/sched.h>
 
 #ifdef VSNFS_DEBUG
 #define vsnfs_trace(type, fmt, arg...) printk(type "%s" fmt, __func__, ## arg)
@@ -90,9 +94,65 @@ struct vsnfs_server {
     int                     namlen;
 };
 
+struct vsnfs_inode {
+	__u64				fileid;	/* inode number */
+	struct vsnfs_fh		fh; /* vsnfs filehandle */
+	unsigned long		flags;
+	struct inode		vfs_inode;
+};
 
-#define VSNFS_SERVER(inode)		(&(inode)->i_sb->u.vsnfs_sb.s_server)
-#define VSNFS_CLIENT(inode)		(NFS_SERVER(inode)->client)
+/*
+ * Inode flags as bit offsets
+ */
+
+#define VSNFS_INO_STALE		(0)	/* Stale Inode */
+#define VSNFS_INO_FLUSH		(4)	/* Due for flushing */
+
+static inline struct vsnfs_inode *VSNFS_I(const struct inode *inode)
+{
+	return container_of(inode, struct vsnfs_inode, vfs_inode);
+}
+
+static inline struct vsnfs_server *VSNFS_SB(const struct super_block *s)
+{
+	return (struct vsnfs_server *)(s->s_fs_info);
+}
+
+static inline struct vsnfs_fh *VSNFS_FH(const struct inode *inode)
+{
+	return &VSNFS_I(inode)->fh;
+}
+
+static inline struct vsnfs_server *VSNFS_SERVER(const struct inode *inode)
+{
+	return VSNFS_SB(inode->i_sb);
+}
+
+static inline struct rpc_clnt *VSNFS_CLIENT(const struct inode *inode)
+{
+	return VSNFS_SERVER(inode)->cl_rpcclient;
+}
+
+static inline const struct vsnfs_rpc_ops *VSNFS_PROTO(const struct inode *inode)
+{
+	return VSNFS_SERVER(inode)->cl_rpc_ops;
+}
+
+static inline int VSNFS_STALE(const struct inode *inode)
+{
+	return test_bit(VSNFS_INO_STALE, &VSNFS_I(inode)->flags);
+}
+
+static inline __u64 VSNFS_FILEID(const struct inode *inode)
+{
+	return VSNFS_I(inode)->fileid;
+}
+
+static inline void set_vsnfs_fileid(struct inode *inode, __u64 fileid)
+{
+	VSNFS_I(inode)->fileid = fileid;
+}
+
 /*
  * Returns a zero iff the size and data fields match.
  * Checks only "size" bytes in the data field.
