@@ -1,3 +1,5 @@
+#include <linux/fs.h>
+#include <linux/namei.h>
 #include <linux/types.h>
 #include <linux/sunrpc/svc.h>
 #include "../vsnfs.h"
@@ -7,10 +9,32 @@
 static __be32
 vsnfsd_proc_null(struct svc_rqst *rqstp, void *argp, void *resp)
 {
-	vsnfs_trace(KERN_DEFAULT, ":-)\n");
-	return nfs_ok;
+        vsnfs_trace(KERN_DEFAULT, ":-)\n");
+	return VSNFS_OK;
 }
 
+static __be32
+vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, struct vsnfsd_fhandle *resp)
+{
+        struct nameidata *nd;
+        struct dentry *root;
+        int ret=0;
+        vsnfs_trace(KERN_DEFAULT, "in getroot\n");
+	nd = kmalloc(sizeof(*nd), GFP_KERNEL);
+        if (unlikely(!nd))
+                return -ENOMEM;
+      	memset(nd,0,sizeof(*nd));
+	ret = path_lookup(argp->path, 0, nd);
+	if(ret<0)
+          vsnfs_trace(KERN_DEFAULT, "failed in path_lookup\n");
+        root=dget(nd->path.dentry);
+        path_put(&nd->path);
+        vsnfs_trace(KERN_DEFAULT, "inode no = %ld\n",root->d_inode->i_ino);
+        dput(root);
+        kfree(nd);
+	return VSNFS_OK;
+
+}
 
 /*
  * VSNFS Server procedures.
@@ -33,6 +57,16 @@ static struct svc_procedure		vsnfsd_procedures1[] = {
 		.pc_cachetype = RC_NOCACHE,
 		.pc_xdrressize = ST,
 	},
+        [VSNFSPROC_GETROOT] = {
+		.pc_func = (svc_procfunc) vsnfsd_proc_getroot,
+		.pc_decode = (kxdrproc_t) vsnfssvc_decode_getrootargs,
+		.pc_encode = (kxdrproc_t) vsnfssvc_encode_fhandle,
+		.pc_argsize = sizeof(struct vsnfsd_getrootargs),
+		.pc_ressize = sizeof(struct vsnfsd_fhandle),
+		.pc_cachetype = RC_NOCACHE,
+		.pc_xdrressize = ST+FH,
+	},
+        
 	/*add procs here*/
 };
 
