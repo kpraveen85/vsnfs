@@ -1,3 +1,7 @@
+/*
+ * vsnfsproc.c - contains all server side NFS procedures 
+ */
+
 #include <linux/fs.h>
 #include <linux/namei.h>
 #include <linux/types.h>
@@ -6,10 +10,19 @@
 #include "vsnfsd.h"
 #include "xdr.h"
 
+
+/* returns nfs error 
+* argp - argument sent by client (after decoded by the corr xdr decode function)
+* resp - result to be sent (it will be decoded by the corr xdr encode function)
+*/
+
+/* this procedure just return x+1 where x is the value received from client */
 static __be32
-vsnfsd_proc_null(struct svc_rqst *rqstp, void *argp, void *resp)
+vsnfsd_proc_null(struct svc_rqst *rqstp, struct vsnfsd_nullargs *argp, 
+						struct vsnfsd_nullres *resp)
 {
-        vsnfs_trace(KERN_DEFAULT, ":-)\n");
+    vsnfs_trace(KERN_DEFAULT, ":-)\n");
+	resp->dummy = argp->dummy + 1;
 	return VSNFS_OK;
 }
 
@@ -50,14 +63,14 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
 static struct svc_procedure		vsnfsd_procedures1[] = {
 	[VSNFSPROC_NULL] = {
 		.pc_func = (svc_procfunc) vsnfsd_proc_null,
-		.pc_decode = (kxdrproc_t) vsnfssvc_decode_void,
-		.pc_encode = (kxdrproc_t) vsnfssvc_encode_void,
-		.pc_argsize = sizeof(struct vsnfsd_void),
-		.pc_ressize = sizeof(struct vsnfsd_void),
+		.pc_decode = (kxdrproc_t) vsnfssvc_decode_nullargs,
+		.pc_encode = (kxdrproc_t) vsnfssvc_encode_nullres,
+		.pc_argsize = sizeof(struct vsnfsd_nullargs),
+		.pc_ressize = sizeof(struct vsnfsd_nullres),
 		.pc_cachetype = RC_NOCACHE,
 		.pc_xdrressize = ST,
 	},
-        [VSNFSPROC_GETROOT] = {
+    [VSNFSPROC_GETROOT] = {
 		.pc_func = (svc_procfunc) vsnfsd_proc_getroot,
 		.pc_decode = (kxdrproc_t) vsnfssvc_decode_getrootargs,
 		.pc_encode = (kxdrproc_t) vsnfssvc_encode_fhandle,

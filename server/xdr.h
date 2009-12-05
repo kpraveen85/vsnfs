@@ -2,7 +2,18 @@
 #define XDR_H
 
 
-struct vsnfsd_void { int dummy; };
+/*struct vsnfsd_void { int dummy; };*/
+
+struct vsnfsd_nullargs
+{
+	int dummy;
+};
+
+struct vsnfsd_nullres
+{
+	int dummy;
+};
+
 
 struct vsnfsd_getrootargs
 {
@@ -15,9 +26,12 @@ struct vsnfsd_fhandle
   struct svc_fh fh;
 };
 
+int
+vsnfssvc_decode_nullargs(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_nullargs *args);
 
-int vsnfssvc_decode_void(struct svc_rqst *, __be32 *, void *);
-int vsnfssvc_encode_void(struct svc_rqst *, __be32 *, void *);
+int
+vsnfssvc_encode_nullres(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_nullres *resp);
+
 
 int vsnfssvc_decode_getrootargs(struct svc_rqst *, __be32 *,
 				struct vsnfsd_getrootargs *);
@@ -31,8 +45,8 @@ int vsnfssvc_encode_fhandle(struct svc_rqst *, __be32 *,
  * Storage requirements for XDR arguments and results.
  */
 union vsnfsd_xdrstore {
-	struct vsnfsd_void null; 
-        struct vsnfsd_getrootargs getroot;
+	struct vsnfsd_nullargs null; 
+    struct vsnfsd_getrootargs getroot;
 	/*put all the xdr args here*/
 	/* 
 	struct nfsd_sattrargs	sattr;
