@@ -9,10 +9,13 @@
 
 /*
  * XDR decode functions
+ * 0 on failure 
+ * 1 on success
  */
 int
-vsnfssvc_decode_void(struct svc_rqst *rqstp, __be32 *p, void *dummy)
+vsnfssvc_decode_nullargs(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_nullargs *args)
 {
+	args->dummy = ntohl(*p++);
 	return xdr_argsize_check(rqstp, p);
 }
 
@@ -46,10 +49,13 @@ vsnfssvc_decode_getrootargs(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_get
 
 /*
  * XDR encode functions
+ * 0 on error
+ * 1 on success
  */
 int
-vsnfssvc_encode_void(struct svc_rqst *rqstp, __be32 *p, void *dummy)
+vsnfssvc_encode_nullres(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_nullres *resp)
 {
+	*p++ = htonl(resp->dummy);	
 	return xdr_ressize_check(rqstp, p);
 }
 
