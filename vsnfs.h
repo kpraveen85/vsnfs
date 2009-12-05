@@ -95,7 +95,7 @@ struct svc_fh {
 
 struct vsnfs_server {
     struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
-    struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
+    const struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
     struct sockaddr_in		cl_addr;        /* server identifier */
     size_t                      cl_addrlen;
     int                         flags; 
