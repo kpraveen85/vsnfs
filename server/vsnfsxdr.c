@@ -56,7 +56,7 @@ vsnfssvc_encode_void(struct svc_rqst *rqstp, __be32 *p, void *dummy)
 static __be32 *
 encode_fh(__be32 *p, struct svc_fh *fhp)
 {
-        memcpy(p, &fhp->fh_handle.data, VSNFS_FHSIZE);
+        memcpy(p, &fhp->fh.data, VSNFS_FHSIZE);
         return p + (VSNFS_FHSIZE>> 2);
 }
 

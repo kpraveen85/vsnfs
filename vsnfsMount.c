@@ -7,6 +7,7 @@
  * includes the ability to mount and umount systems.
  *
  * (C) Karthik Balaji <findkb@gmail.com>
+ * (C) Praveen Krishnamoorthy <kpraveen85@gmail.com>
  *
  */
 
@@ -15,11 +16,12 @@
 #include "vsnfs.h"
 #include "vsnfsMount.h"
 
-enum { vsnfs_opt_port, vsnfs_opt_ip, vsnfs_opt_err };
+enum { vsnfs_opt_port, vsnfs_opt_ip, vsnfs_opt_dir, vsnfs_opt_err };
 
 static const match_table_t tokens = {
 	{vsnfs_opt_port, "port=%u"},
 	{vsnfs_opt_ip, "ip=%s"},
+        {vsnfs_opt_dir, "dir=%s"},
 	{vsnfs_opt_err, NULL}
 };
 
@@ -28,6 +30,7 @@ int vsnfs_parse_mount_options(char *raw_data, const struct vsnfs_mount_data *dat
                             struct vsnfs_fh *mntfh, const char *dev_name)
 {
 	char *ip;
+        char *dir;
 	char *p;
 	char *port_src;
 	u_int port = 0;
@@ -55,6 +58,10 @@ int vsnfs_parse_mount_options(char *raw_data, const struct vsnfs_mount_data *dat
 			ip = kstrdup(args[0].from, GFP_KERNEL);
 			printk("Received IP : %s\n", ip);
 			break;
+                case vsnfs_opt_dir:
+                        dir = kstrdup(args[0].from, GFP_KERNEL);
+			printk("Received dir : %s\n", dir);
+                        break;
 		case vsnfs_opt_err:
 		default:
 			printk(KERN_WARNING
