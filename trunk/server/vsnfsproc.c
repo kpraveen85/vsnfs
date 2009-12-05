@@ -74,7 +74,7 @@ static struct svc_procedure		vsnfsd_procedures1[] = {
 
 struct svc_version	vsnfsd_version1 = {
 		.vs_vers	= 1,
-		.vs_nproc	= NO_OF_VSNFSPROCS,
+		.vs_nproc	= VSNFS_NRPROCS,
 		.vs_proc	= vsnfsd_procedures1,
 		.vs_dispatch	= vsnfsd_dispatch,
 		.vs_xdrsize	= VSNFS_SVC_XDRSIZE,

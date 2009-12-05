@@ -38,6 +38,7 @@
 #define VSNFS_MAXPATHLEN 1024
 #define VSNFS_FHSIZE	 64
 #define VSNFS_COOKIESIZE 4
+#define VSNFS_NRPROCS    2
 
 /* vsnfs stats. These are the error codes that
  * are meaningful in RPC context
@@ -78,6 +79,10 @@ enum vsnfs_ftype {
 struct vsnfs_fh {
 	unsigned short size;
 	unsigned char data[VSNFS_FHSIZE];
+};
+
+struct svc_fh {
+        struct vsnfs_fh fh;
 };
 
 /* NFS Client Parameters stored in superblock */
@@ -167,9 +172,6 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 	target->size = source->size;
 	memcpy(target->data, source->data, source->size);
 }
-
-/* list no. of vsnfs procedures here */
-#define NO_OF_VSNFSPROCS 1
 
 
 #define VSNFSPROC_NULL		0
