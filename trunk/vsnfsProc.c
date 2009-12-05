@@ -63,7 +63,7 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 	return status;
 }
 
-struct vsnfs_rpc_ops vsnfs_clientops = {
+const struct vsnfs_rpc_ops vsnfs_clientops = {
 	.version		 = 1,
 	.getroot		 = vsnfs_proc_get_root,
 /*	.lookup			 = vsnfs_proc_lookup,

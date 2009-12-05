@@ -64,7 +64,7 @@ extern int vsnfs_stat_to_errno(int);
 extern struct rpc_procinfo vsnfs_procedures[];
 extern __be32 *vsnfs_decode_dirent(__be32 *, struct vsnfs_entry *, int);
 
-extern struct vsnfs_rpc_ops vsnfs_clientops;
+extern const struct vsnfs_rpc_ops vsnfs_clientops;
 extern struct rpc_version vsnfs_version1;
 extern struct rpc_program vsnfs_program;
 extern struct rpc_stat vsnfs_rpcstat;

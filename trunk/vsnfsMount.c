@@ -22,7 +22,7 @@ enum { vsnfs_opt_port, vsnfs_opt_timeout, vsnfs_opt_err };
 
 static const match_table_t tokens = {
 	{vsnfs_opt_port, "port=%u"},
-	{vsnfs_opt_timeout, "timeout=%s"},
+	{vsnfs_opt_timeout, "timeout=%u"},
        	{vsnfs_opt_err, NULL}
 };
 
