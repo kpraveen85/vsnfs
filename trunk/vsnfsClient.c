@@ -73,15 +73,20 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
 	int ret = 0;
-	struct vsnfs_fh *mntfh;
-	char *data;
+//	struct super_block *s = NULL;
+	struct vsnfs_server *server = NULL;
 	printk("Inside get_sb\n");
 
-	data = kzalloc(sizeof(*data), GFP_KERNEL);
-	mntfh = kzalloc(sizeof(*mntfh), GFP_KERNEL);
+	server = kzalloc(sizeof(struct vsnfs_server), GFP_KERNEL);
+	if (IS_ERR(server)) {
+		ret = PTR_ERR(server);
+		goto out;
+	}
 
 	/* Validate and copy the mount data */
-	ret = vsnfs_parse_mount_options((char *)raw_data, data, mntfh, dev_name);
+	ret = vsnfs_parse_mount_options((char *)raw_data, dev_name, server);
+
+out:
 	return ret;
 }
 
