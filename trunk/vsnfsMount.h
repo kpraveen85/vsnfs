@@ -28,7 +28,7 @@ struct vsnfs_mount_data {
 };
 
 extern int
-vsnfs_parse_mount_options(char *options, const struct vsnfs_mount_data *data,
+vsnfs_parse_mount_options(char *options, char *data,
 							struct vsnfs_fh *mntfh, const char *dev_name);
 
 #endif

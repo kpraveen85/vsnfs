@@ -9,19 +9,9 @@
  *
  */
 
-#include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/string.h>
-#include <linux/errno.h>
-#include <linux/unistd.h>
-#include <linux/sunrpc/clnt.h>
-#include <linux/sunrpc/stats.h>
-#include <linux/sunrpc/metrics.h>
 #include <linux/sunrpc/xprtsock.h>
 #include <linux/sunrpc/xprtrdma.h>
-#include <linux/vfs.h>
-#include <linux/inet.h>
-#include <linux/fs.h>
 
 #include <asm/system.h>
 
@@ -30,7 +20,7 @@
 #include "vsnfsClient.h"
 #include "vsnfsMount.h"
 
-/* RPC registration details */
+/* 1. RPC registration details */
 
 static struct rpc_version *vsnfs_version[2] = {
 	[1]					= &vsnfs_version1,
@@ -48,12 +38,43 @@ struct rpc_stat vsnfs_rpcstat = {
 	.program	= &vsnfs_program
 };
 
+/* 2. Filesystem registration and superblock operations */
+
+static int vsnfs_get_sb(struct file_system_type *, int, const char *,
+						void *, struct vfsmount *);
+static void vsnfs_kill_sb(struct super_block *);
+static void vsnfs_umount_begin(struct super_block *sb);
+
+static struct file_system_type vsnfs_type = {
+	.owner		= THIS_MODULE,
+	.name		= "vsnfs",
+	.get_sb		= vsnfs_get_sb,
+	.kill_sb	= vsnfs_kill_sb,
+};
+
+static const struct super_operations vsnfs_sops = {
+	.alloc_inode	= vsnfs_alloc_inode,
+	.destroy_inode	= vsnfs_destroy_inode,
+	.write_inode	= vsnfs_write_inode,
+	.umount_begin	= vsnfs_umount_begin,
+};
+
+int VSNFSClientInit(void)
+{
+    return register_filesystem(&vsnfs_type);
+}
+
+int VSNFSClientCleanup(void)
+{
+    return unregister_filesystem(&vsnfs_type);
+}
+
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
 	int ret = 0;
 	struct vsnfs_fh *mntfh;
-	struct vsnfs_mount_data *data;
+	char *data;
 	printk("Inside get_sb\n");
 
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
@@ -69,19 +90,7 @@ static void vsnfs_kill_sb(struct super_block *sb)
 	printk("Inside kill_sb\n");
 }
 
-static struct file_system_type vsnfs_type = {
-	.owner		= THIS_MODULE,
-	.name		= "vsnfs",
-	.get_sb		= vsnfs_get_sb,
-	.kill_sb	= vsnfs_kill_sb
-};
-
-int VSNFSClientInit(void) 
+static void vsnfs_umount_begin(struct super_block *sb)
 {
-	return register_filesystem(&vsnfs_type);
-}
-
-int VSNFSClientCleanup(void)
-{
-	return unregister_filesystem(&vsnfs_type);
+	printk("Inside Umount\n");
 }
