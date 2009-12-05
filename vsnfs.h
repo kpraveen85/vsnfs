@@ -5,7 +5,9 @@
  *
  *      Protocol definitions for VSNFS
  *
- *(C) Karthik Balaji <findkb@gmail.com>
+ * (C) Karthik Balaji <findkb@gmail.com>
+ * (C) Praveen Krishnamoorthy <kpraveen85@gmail.com>
+ * (C) Prabakar Radhakrishnan <prabakarcse@gmail.com>
  */
 #ifndef _VSNFS_H
 #define _VSNFS_H
@@ -42,6 +44,7 @@
 #define VSNFS_FHSIZE	 64
 #define VSNFS_COOKIESIZE 4
 #define VSNFS_NRPROCS    2
+#define VSNFS_TIMEOUT    600
 
 /* vsnfs stats. These are the error codes that
  * are meaningful in RPC context
@@ -94,13 +97,13 @@ struct vsnfs_server {
     struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
     struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
     struct sockaddr_in		cl_addr;        /* server identifier */
-    size_t                  cl_addrlen;
-/*  int                     flags; 
-    int                     timeout;
-    char                    ip_addr[16];
-	int						server_port;
-	char*					mnt_path; */
-	struct vsnfs_fh			root_fh;
+    size_t                      cl_addrlen;
+    int                         flags; 
+    int                         timeout;
+    char                        ip_addr[16];
+    int	         		server_port;
+    char*			mnt_path; 
+    struct vsnfs_fh		root_fh;
 };
 
 struct vsnfs_inode {

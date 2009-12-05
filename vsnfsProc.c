@@ -5,8 +5,9 @@
  * 
  * OS-independent vsnfs remote procedure call functions
  *
- *(C) Karthik Balaji <findkb@gmail.com>
- *
+ * (C) Karthik Balaji <findkb@gmail.com>
+ * (C) Praveen Krishnamoorthy <kpraveen85@gmail.com>
+ * (C) Prabakar Radhakrishnan <prabakarcse@gmail.com>
  */
 
 #include <linux/types.h>
@@ -62,7 +63,7 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 	return status;
 }
 
-const struct vsnfs_rpc_ops vsnfs_clientops = {
+struct vsnfs_rpc_ops vsnfs_clientops = {
 	.version		 = 1,
 	.getroot		 = vsnfs_proc_get_root,
 /*	.lookup			 = vsnfs_proc_lookup,
