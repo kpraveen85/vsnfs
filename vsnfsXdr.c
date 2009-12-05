@@ -26,7 +26,7 @@
 #define	VSNFS_readdirargs_sz	(VSNFS_fhandle_sz+2)
 
 #define VSNFS_dec_void_sz		0
-#define VSNFS_readdirres_sz		(VSNFS_fhandle_sz+2)
+#define VSNFS_readdirres_sz		(1)
 
 /*
  * Common VSNFS XDR functions as inlines

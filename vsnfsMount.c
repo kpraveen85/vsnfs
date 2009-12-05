@@ -26,7 +26,7 @@ static const match_table_t tokens = {
 };
 
 /* Read and validate the mount data */
-int vsnfs_parse_mount_options(char *raw_data, const struct vsnfs_mount_data *data,
+int vsnfs_parse_mount_options(char *raw_data, char *data,
                             struct vsnfs_fh *mntfh, const char *dev_name)
 {
 	char *ip;

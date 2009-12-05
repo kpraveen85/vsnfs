@@ -18,11 +18,14 @@
 #include <linux/gfp.h>
 #include <linux/mm.h>
 #include <linux/socket.h>
+#include <linux/inet.h>
 #include <linux/list.h>
+#include <linux/vfs.h>
 #include <linux/fs.h>
 #include <linux/bitops.h>
 #include <linux/sunrpc/debug.h>
 #include <linux/sunrpc/sched.h>
+#include <linux/sunrpc/clnt.h>
 
 #ifdef VSNFS_DEBUG
 #define vsnfs_trace(type, fmt, arg...) printk(type "%s" fmt, __func__, ## arg)
@@ -88,15 +91,16 @@ struct svc_fh {
 /* NFS Client Parameters stored in superblock */
 
 struct vsnfs_server {
-    struct rpc_clnt         *cl_rpcclient;  /* RPC client handle */
-    struct vsnfs_rpc_ops    *cl_rpc_ops;    /* VSNFS protocol vector */
-    int                     cl_proto;
-    struct sockaddr_storage cl_addr;        /* server identifier */
+    struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
+    struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
+    struct sockaddr_in		cl_addr;        /* server identifier */
     size_t                  cl_addrlen;
-/*  int                     flags; */
+/*  int                     flags; 
     int                     timeout;
-    char                    hostname[VSNFS_MAXNAMLEN + 1];
-    int                     namlen;
+    char                    ip_addr[16];
+	int						server_port;
+	char*					mnt_path; */
+	struct vsnfs_fh			root_fh;
 };
 
 struct vsnfs_inode {
