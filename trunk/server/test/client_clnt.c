@@ -9,17 +9,17 @@
 /* Default timeout can be changed using clnt_control() */
 static struct timeval TIMEOUT = { 25, 0 };
 
-void *
-vsnfs_proc_null_1(void *argp, CLIENT *clnt)
+int *
+vsnfs_proc_null_1(int *argp, CLIENT *clnt)
 {
-	static char clnt_res;
+	static int clnt_res;
 
 	memset((char *)&clnt_res, 0, sizeof(clnt_res));
 	if (clnt_call (clnt, VSNFS_PROC_NULL,
-		(xdrproc_t) xdr_void, (caddr_t) argp,
-		(xdrproc_t) xdr_void, (caddr_t) &clnt_res,
+		(xdrproc_t) xdr_int, (caddr_t) argp,
+		(xdrproc_t) xdr_int, (caddr_t) &clnt_res,
 		TIMEOUT) != RPC_SUCCESS) {
 		return (NULL);
 	}
-	return ((void *)&clnt_res);
+	return (&clnt_res);
 }
