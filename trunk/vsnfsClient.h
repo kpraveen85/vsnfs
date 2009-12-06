@@ -37,7 +37,6 @@ extern int VSNFSClientCleanup(void);
 
 extern struct inode *vsnfs_alloc_inode(struct super_block *sb);
 extern void vsnfs_destroy_inode(struct inode *);
-extern int vsnfs_write_inode(struct inode *, int);
 
 /*
  * vsnfs/file.c

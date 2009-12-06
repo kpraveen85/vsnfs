@@ -24,6 +24,7 @@
 #include <linux/list.h>
 #include <linux/vfs.h>
 #include <linux/fs.h>
+#include <linux/pagemap.h>
 #include <linux/bitops.h>
 #include <linux/sunrpc/debug.h>
 #include <linux/sunrpc/sched.h>
@@ -45,6 +46,7 @@
 #define VSNFS_COOKIESIZE 4
 #define VSNFS_NRPROCS    2
 #define VSNFS_TIMEOUT    600
+#define VSNFS_SB_MAGIC	 0x7979
 
 /* vsnfs stats. These are the error codes that
  * are meaningful in RPC context
@@ -94,16 +96,16 @@ struct svc_fh {
 /* NFS Client Parameters stored in superblock */
 
 struct vsnfs_server {
-    struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
-    const struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
-    struct sockaddr_in		cl_addr;        /* server identifier */
-    size_t                      cl_addrlen;
-    int                         flags; 
-    int                         timeout;
-    char                        ip_addr[16];
-    int	         		server_port;
-    char*			mnt_path; 
-    struct vsnfs_fh		root_fh;
+	struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
+	const struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
+	struct sockaddr_in		cl_addr;        /* server identifier */
+	size_t					cl_addrlen;
+	int						flags; 
+	int						timeout;
+	char					ip_addr[16];
+	int						server_port;
+	char*					mnt_path; 
+	struct vsnfs_fh			root_fh;
 };
 
 struct vsnfs_inode {
