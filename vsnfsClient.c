@@ -13,6 +13,7 @@
 #include <linux/module.h>
 #include <linux/sunrpc/xprtsock.h>
 #include <linux/sunrpc/xprtrdma.h>
+#include <linux/sunrpc/msg_prot.h>
 
 #include <asm/system.h>
 
@@ -43,6 +44,7 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 {
     struct rpc_clnt *clnt = NULL;
     struct rpc_create_args args;
+    printk(KERN_ERR "inside vsnfs_Create_rpcClient\n");
 
 
     server->cl_addrlen = sizeof(server->cl_addr);
@@ -55,11 +57,13 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
     args.servername = server->ip_addr;
     args.program = &vsnfs_program;
     args.version = server->cl_rpc_ops->version;
-//  authflavor =
+    args.authflavor = RPC_AUTH_UNIX;
+
+    printk(KERN_ERR "calling rpc_create\n");
 
     clnt = rpc_create(&args);
     if(IS_ERR(clnt)){
-        vsnfs_trace(KERN_DEFAULT, "%s: cannot create RPC client = %ld\n",__func__, PTR_ERR(clnt));
+        printk(KERN_ERR "%s: cannot create RPC client = %ld\n",__func__, PTR_ERR(clnt));
         return PTR_ERR(clnt);
     }
     server->cl_rpcclient = clnt;
@@ -111,7 +115,12 @@ static const struct super_operations vsnfs_sops = {
 
 int VSNFSClientInit(void)
 {
-    return register_filesystem(&vsnfs_type);
+  int ret = 0;
+    printk(KERN_ERR "inside vsnfs_ClientInit\n");
+	ret= register_filesystem(&vsnfs_type);
+	printk(KERN_ERR "register_filesys : %d\n", ret);
+
+	return ret;
 }
 
 int VSNFSClientCleanup(void)
@@ -122,7 +131,8 @@ int VSNFSClientCleanup(void)
 static void vsnfs_fill_super(struct super_block *sb)
 {
 	struct inode *root = iget_locked(sb, 2);
-
+        
+        printk(KERN_ERR "inside vsnfs_fill_super\n");
 	sb->s_root = d_alloc_root(root);
 	sb->s_blocksize_bits = VSNFS_FILE_BSIZE_BITS;
 	sb->s_blocksize = VSNFS_FILE_IO_SIZE;
@@ -150,8 +160,9 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	struct vsnfs_server *server = NULL;
 //	struct vsnfs_fh *mntfh;
 //	struct dentry *mntroot;
-	printk("Inside get_sb\n");
+        printk(KERN_ERR "inside vsnfs_getsb\n");
 
+	
 	server = kzalloc(sizeof(struct vsnfs_server), GFP_KERNEL);
 	if (IS_ERR(server)) {
 		ret = PTR_ERR(server);
@@ -164,9 +175,10 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 		goto out;
 
     ret = vsnfs_create_rpcclient(server);
-    if (ret < 0)
+    if (ret < 0) {
+      printk(KERN_DEFAULT "failed in vsnfs_create_rpcclient\n");
         goto out;
- 
+    }
 	s = sget(fs_type, NULL, vsnfs_set_super, server);
 	if (IS_ERR(s)) {
 		ret = PTR_ERR(s);
