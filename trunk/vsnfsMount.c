@@ -102,7 +102,8 @@ int vsnfs_parse_mount_options(char *raw_data, const char *dev_name,
         server->cl_addr.sin_port =htons(VSNFS_PORT);
         rc=vsnfs_inet_pton(AF_INET,server->ip_addr,&server->cl_addr.sin_addr);
         if(rc<0)
-	  goto out_parse;
+	  		goto out_parse;
+		server->cl_addrlen = sizeof(server->cl_addr);
 
 
 	while ((p = strsep(&raw_data, ",")) != NULL) {

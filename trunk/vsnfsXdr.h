@@ -20,6 +20,17 @@
 
 #define VSNFS_FILE_IO_SIZE		(4096U)
 #define VSNFS_FILE_BSIZE_BITS	(12)
+
+/* Put all arguments and response structure here */
+/* Argument for NULL proc */
+struct vsnfs_nullargs {
+	int dummy;
+};
+/* Response from NULL proc*/
+struct vsnfs_nullres {
+	int dummy;
+};
+
 /*
  * Arguements to readdir call (JUST A SAMPLE)
  */
@@ -47,6 +58,7 @@ struct vsnfs_rpc_ops {
 	const struct inode_operations *dir_inode_ops;
 	const struct inode_operations *file_inode_ops;
 
+	int		(*nullproc) (struct vsnfs_server *, int, int*);
 	int		(*getroot) (struct vsnfs_server *, struct vsnfs_fh *);
 /*	int		(*lookup)  (struct inode *, struct qstr *, struct vsnfs_fh *);
 	int		(*create)  (struct inode *, struct dentry *, struct iattr *,

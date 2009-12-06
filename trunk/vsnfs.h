@@ -31,7 +31,7 @@
 #include <linux/sunrpc/clnt.h>
 
 #ifdef VSNFS_DEBUG
-#define vsnfs_trace(type, fmt, arg...) printk(type "%s" fmt, __func__, ## arg)
+#define vsnfs_trace(type, fmt, arg...) printk(type "%s: " fmt, __func__, ## arg)
 #else
 #define vsnfs_trace(type, fmt, arg...)
 #endif

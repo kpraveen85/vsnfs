@@ -22,6 +22,36 @@
 #include "vsnfs.h"
 #include "vsnfsXdr.h"
 
+/* vsnfs proc definitions */
+
+/* NULL procedure - Just to test the client-server communicaion */
+/* Returns 0 on success
+  * err_no on failure
+  */
+static int
+vsnfs_proc_null(struct vsnfs_server *server, int input, int *output)
+{	
+	int	status;
+	struct vsnfs_nullargs	arg = { 
+		.dummy	= input,
+	};	
+	struct vsnfs_nullres res;
+	
+	struct rpc_message msg = {
+		.rpc_proc	= &vsnfs_procedures[VSNFSPROC_NULL],
+		.rpc_argp	= &arg,
+		.rpc_resp	= &res,
+	};
+		
+	status = rpc_call_sync(server->cl_rpcclient, &msg, 0);
+
+	if(status == 0)
+		*output = res.dummy;
+	
+	return status;
+}
+
+
 static int
 vsnfs_proc_get_root(struct vsnfs_server *server, struct vsnfs_fh *fhandle)
 {
@@ -64,7 +94,8 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 }
 
 const struct vsnfs_rpc_ops vsnfs_clientops = {
-	.version		 = 1,
+	.version		 = VSNFS_VERSION,
+	.nullproc		 = vsnfs_proc_null,
 	.getroot		 = vsnfs_proc_get_root,
 /*	.dentry_ops		 = &vsnfs_dentry_operations,
 	.dir_inode_ops	 = &vsnfs_dir_inode_operations,

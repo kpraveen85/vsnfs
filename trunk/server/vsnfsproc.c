@@ -23,7 +23,7 @@ vsnfsd_proc_null(struct svc_rqst *rqstp, struct vsnfsd_nullargs *argp,
 {
     vsnfs_trace(KERN_DEFAULT, ":-)\n");
 	resp->dummy = argp->dummy + 1;
-	return VSNFS_OK;
+	return vsnfs_ok;
 }
 
 static __be32
@@ -68,7 +68,7 @@ static struct svc_procedure		vsnfsd_procedures1[] = {
 		.pc_argsize = sizeof(struct vsnfsd_nullargs),
 		.pc_ressize = sizeof(struct vsnfsd_nullres),
 		.pc_cachetype = RC_NOCACHE,
-		.pc_xdrressize = ST,
+		.pc_xdrressize = ST+1,
 	},
     [VSNFSPROC_GETROOT] = {
 		.pc_func = (svc_procfunc) vsnfsd_proc_getroot,
