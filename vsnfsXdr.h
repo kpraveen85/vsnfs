@@ -18,6 +18,8 @@
 #include <linux/sunrpc/xprt.h>
 #include <linux/mm.h>
 
+#define VSNFS_FILE_IO_SIZE		(4096U)
+#define VSNFS_FILE_BSIZE_BITS	(12)
 /*
  * Arguements to readdir call (JUST A SAMPLE)
  */
