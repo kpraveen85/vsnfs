@@ -22,15 +22,20 @@
 static int
 __init vsnfs_init(void)
 {
-	if (!VSNFSClientInit())
-		return -1;
-	return 0;
+	int ret;
+	ret = VSNFSClientInit();
+	if (ret < 0)
+		printk(KERN_ERR "MODULE INSERT FAILED WITH %d\n", ret);
+	return ret;
 }
 
 static void
 __exit vsnfs_cleanup(void)
 {
-	VSNFSClientCleanup();
+	int ret;
+	ret = VSNFSClientCleanup();
+	if (ret < 0)
+		printk(KERN_ERR "UNABLE TO REMOVE MODULE:%d\n", ret);
 }
 
 module_init(vsnfs_init);

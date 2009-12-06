@@ -71,6 +71,7 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 static int vsnfs_get_sb(struct file_system_type *, int, const char *,
 						void *, struct vfsmount *);
 static void vsnfs_kill_sb(struct super_block *);
+
 static void vsnfs_umount_begin(struct super_block *sb)
 {
 	struct vsnfs_server *server = VSNFS_SB(sb);
