@@ -259,19 +259,16 @@ vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 		return 1;
 	}
 
-	/* need to grab the location to store the status
-	 */
-	nfserrp = rqstp->rq_res.head[0].iov_base
-		+ rqstp->rq_res.head[0].iov_len;
-	rqstp->rq_res.head[0].iov_len += sizeof(__be32);
 
 
 	/* Now call the procedure handler, and encode NFS status. */
 	nfserr = proc->pc_func(rqstp, rqstp->rq_argp, rqstp->rq_resp);
 
-
-	if (rqstp->rq_proc != 0)
-		*nfserrp++ = nfserr;
+	/* store the status*/
+	nfserrp = rqstp->rq_res.head[0].iov_base
+		+ rqstp->rq_res.head[0].iov_len;
+	*nfserrp++ = nfserr;	
+	rqstp->rq_res.head[0].iov_len += sizeof(__be32);
 
 	/* Encode result.
 	 * additional info is never returned in case of an error.

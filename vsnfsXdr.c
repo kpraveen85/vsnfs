@@ -16,16 +16,18 @@
 
 #define errno_VSNFSERR_IO		EIO
 
+
+/* Size should be number of 32 bits (XDR word size) */
 #define VSNFS_fhandle_sz		8
 #define VSNFS_filename_sz		(1+(VSNFS_MAXNAMLEN>>2))
 #define VSNFS_path_sz			(1+(VSNFS_MAXPATHLEN>>2))
 #define VSNFS_info_sz			5
 #define VSNFS_entry_sz			(VSNFS_filename_sz+3)
 
-#define VSNFS_enc_void_sz		0
+#define VSNFS_nullargs_sz		(1)
 #define	VSNFS_readdirargs_sz	(VSNFS_fhandle_sz+2)
 
-#define VSNFS_dec_void_sz		0
+#define VSNFS_nullres_sz		(1)
 #define VSNFS_readdirres_sz		(1)
 
 /*
@@ -51,15 +53,8 @@ xdr_decode_fhandle(__be32 *p, struct vsnfs_fh *fhandle)
  * VSNFS encode functions
  */
 
-/* NULL procedure encode */
-static int
-vsnfs_xdr_enc_void(struct rpc_rqst *req, __be32 *p, void *dummy)
-{
-	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
-	return 0;
-}
-
 /* Encode file handle */
+#if 0
 static int
 vsnfs_xdr_fhandle(struct rpc_rqst *req, __be32 *p, struct vsnfs_fh *fh)
 {
@@ -67,6 +62,17 @@ vsnfs_xdr_fhandle(struct rpc_rqst *req, __be32 *p, struct vsnfs_fh *fh)
 	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
 	return 0;
 }
+#endif
+
+/* NULL procedure encode */
+static int
+vsnfs_xdr_nullargs(struct rpc_rqst *req, __be32 *p, struct vsnfs_nullargs *args)
+{
+	*p++ = htonl(args->dummy);
+	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
+	return 0;
+}
+
 
 /*
  * Encode arguments to readdir call
@@ -95,11 +101,27 @@ vsnfs_xdr_readdirargs(struct rpc_rqst *req, __be32 *p, struct vsnfs_readdirargs 
  */
 
 /* NULL procedure decode */
+
+/* Decode function for NULL proc response
+ *  Returns	0 on success
+ * 			Error number corr. to  VSNFS status on failure
+ */
+
 static int
-vsnfs_xdr_dec_void(struct rpc_rqst *req, __be32 *p, void *dummy)
+vsnfs_xdr_nullres(struct rpc_rqst *req, __be32 *p, struct vsnfs_nullres *res)
 {
+	int status;
+
+	if ((status = ntohl(*p++))) {
+		vsnfs_trace(KERN_DEFAULT, "status %d\n",status);
+		return vsnfs_stat_to_errno(status);
+		}
+	
+	res->dummy	= ntohl(*p++);
+	vsnfs_trace(KERN_DEFAULT, "result %d\n",res->dummy);
 	return 0;
 }
+
 
 /*
  * Decode the result of a readdir call.
@@ -271,8 +293,8 @@ vsnfs_stat_to_errno(int stat)
 	}
 
 struct rpc_procinfo vsnfs_procedures[] = {
-	PROC(NULL,			enc_void,		dec_void),
-	PROC(GETROOT,		fhandle,		dec_void),
+	PROC(NULL,			nullargs,		nullres),
+//	PROC(GETROOT,		fhandle,		dec_void),
 //	PROC(LOOKUP,        diropargs,      diropres),
 //	PROC(READ,          readargs,       readres),
 //	PROC(WRITE,			writeargs,		writeres),

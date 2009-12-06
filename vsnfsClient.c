@@ -43,30 +43,52 @@ struct rpc_stat vsnfs_rpcstat = {
 static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 {
     struct rpc_clnt *clnt = NULL;
-    struct rpc_create_args args;
+    struct rpc_create_args args =
+		{
+		    .protocol = IPPROTO_TCP,
+    		.address = (struct sockaddr *)&server->cl_addr,
+    		.addrsize = server->cl_addrlen,
+			//.timeout  = &server->timeout,
+    		.servername = server->ip_addr,
+    		.program = &vsnfs_program,
+    		.version = server->cl_rpc_ops->version,
+    		.authflavor = RPC_AUTH_UNIX,
+    		.flags = RPC_CLNT_CREATE_NOPING, /* check the flags options */
+		};
     printk(KERN_ERR "inside vsnfs_Create_rpcClient\n");
 
 
-    server->cl_addrlen = sizeof(server->cl_addr);
-    server->cl_rpc_ops = &vsnfs_clientops;
-
-    args.protocol = IPPROTO_TCP;
-    args.address = (struct sockaddr *)&server->cl_addr;
-    args.addrsize = server->cl_addrlen;
-//  args.timeout  = &server->timeout; 
-    args.servername = server->ip_addr;
-    args.program = &vsnfs_program;
-    args.version = server->cl_rpc_ops->version;
-    args.authflavor = RPC_AUTH_UNIX;
 
     printk(KERN_ERR "calling rpc_create\n");
-
+	
     clnt = rpc_create(&args);
+
     if(IS_ERR(clnt)){
         printk(KERN_ERR "%s: cannot create RPC client = %ld\n",__func__, PTR_ERR(clnt));
         return PTR_ERR(clnt);
     }
-    server->cl_rpcclient = clnt;
+	printk(KERN_ERR "RPC client created\n");
+	server->cl_rpcclient = clnt;	
+
+/*to be removed*/
+#if 0
+{
+	int input, output, ret;
+	input = 45;
+	ret = server->cl_rpc_ops->nullproc(server, input, &output);
+	if(ret == 0)
+		{
+		vsnfs_trace(KERN_DEFAULT, "success :-) %d\n", output);
+		}
+	else
+		{		
+		vsnfs_trace(KERN_DEFAULT, "failure :-( %d\n", ret);
+		}
+	BUG_ON(1);	
+}
+#endif
+
+
     return 0;
 }
 
@@ -151,7 +173,21 @@ static int vsnfs_set_super(struct super_block *s, void *data)
 	s->s_fs_info = server;
 	return set_anon_super(s, server);
 }
+
+static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name, void *raw_data)
+{
+	int ret = 0;
 	
+    server->cl_rpc_ops = &vsnfs_clientops;
+	ret = vsnfs_parse_mount_options((char *)raw_data, dev_name, server);
+	if (ret < 0) {
+		vsnfs_trace(KERN_DEFAULT, "Error parsing mount options\n");
+		goto out;
+		}
+	
+	out:
+		return ret;		
+}
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
@@ -170,7 +206,7 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	}
 
 	/* Validate and copy the mount data */
-	ret = vsnfs_parse_mount_options((char *)raw_data, dev_name, server);
+	ret = vsnfs_init_server(server, dev_name, raw_data);
 	if (ret < 0)
 		goto out;
 
