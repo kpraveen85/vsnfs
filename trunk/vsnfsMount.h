@@ -12,20 +12,6 @@
 #define _VSNFSMOUNT_H
 
 #include <linux/in.h>
-/* Structure passed from user-space to kernel-space
- * during vsnfs mount
- */
-
-struct vsnfs_mount_data {
-	int 	fd;
-	struct 	vsnfs_fh old_root;
-	int 	flags;
-	int 	timeout;
-	struct 	sockaddr_in addr;
-	char 	hostname[VSNFS_MAXNAMLEN + 1];
-	int 	namlen;
-	struct 	vsnfs_fh root;
-};
 
 extern int
 vsnfs_parse_mount_options(char *options, const char *dev_name,

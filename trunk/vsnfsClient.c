@@ -11,6 +11,9 @@
  */
 
 #include <linux/module.h>
+#include <linux/stat.h>
+#include <linux/namei.h>
+#include <linux/mount.h>
 #include <linux/sunrpc/xprtsock.h>
 #include <linux/sunrpc/xprtrdma.h>
 #include <linux/sunrpc/msg_prot.h>
@@ -150,7 +153,8 @@ int VSNFSClientCleanup(void)
     return unregister_filesystem(&vsnfs_type);
 }
 
-static void vsnfs_fill_super(struct super_block *sb)
+static inline
+void vsnfs_fill_super(struct super_block *sb)
 {
 	struct inode *root = iget_locked(sb, 2);
         
@@ -174,6 +178,7 @@ static int vsnfs_set_super(struct super_block *s, void *data)
 	return set_anon_super(s, server);
 }
 
+/* To set the super block dentry */
 static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name, void *raw_data)
 {
 	int ret = 0;
@@ -188,17 +193,122 @@ static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name, 
 	out:
 		return ret;		
 }
+
+/*
+ * Wrapper for iget. We look up by inode number only
+ */
+struct inode *
+vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
+{
+	struct inode *inode = ERR_PTR(-ENOENT);
+	unsigned long hash;
+	char *tmp = NULL;
+	tmp = fh->data;
+	hash = simple_strtoul(fh->data, &tmp, 0);
+	
+	inode = iget_locked(sb, hash);
+	if (inode == NULL) {
+		inode = ERR_PTR(-ENOMEM);
+		goto out_no_inode;
+	}
+
+	if (inode->i_state & I_NEW) {
+		inode_init_once(inode);
+
+		inode->i_ino = hash;
+		inode->i_flags |= S_NOATIME|S_NOCMTIME;
+		inode->i_mode = S_IALLUGO;
+
+		inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->file_inode_ops;
+		if (fh->type == VSNFS_REG) {
+			inode->i_fop = &vsnfs_file_operations;
+//			inode->i_data.a_ops = &vsnfs_file_aops;
+			inode->i_size = VSNFS_MAXDATA;
+		} else if (fh->type == VSNFS_DIR) {
+			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
+			inode->i_fop = &vsnfs_dir_operations;
+			inode->i_size = VSNFS_DIRSIZE;
+			inode->i_nlink = 2;
+		} else {
+			vsnfs_trace(KERN_ERR, "vsnfs_fhget: Invalid filetype. Aborting\n");
+			unlock_new_inode(inode);
+			iput(inode);
+			goto out_no_inode;
+		}
+
+		inode->i_uid = 0;
+		inode->i_gid = 0;
+		inode->i_private = (void *) fh;
+
+		unlock_new_inode(inode);
+	} else
+		vsnfs_trace(KERN_INFO, "Inode Found\n");
+out:
+	return inode;
+
+out_no_inode:
+	printk("vsnfs_fhget: iget failed\n");
+	goto out;
+}
+
+static int vsnfs_superblock_set_dummy_root(struct super_block *sb, struct inode *inode)
+{
+	if (sb->s_root == NULL) {
+		sb->s_root = d_alloc_root(inode);
+		if (sb->s_root == NULL) {
+			iput(inode);
+			return -ENOMEM;
+		}
+
+		atomic_inc(&inode->i_count);
+		spin_lock(&dcache_lock);
+		list_del_init(&sb->s_root->d_alias);
+		spin_unlock(&dcache_lock);
+	}
+	return 0;
+}
+	
+
+struct dentry *vsnfs_get_root(struct super_block *sb, struct vsnfs_fh *mntfh)
+{
+	struct vsnfs_server *server = VSNFS_SB(sb);
+	struct dentry 		*mntroot;
+	struct inode 		*rootinode;
+	int 				ret;
+
+	rootinode = vsnfs_fhget(sb, mntfh);
+	if (IS_ERR(rootinode)) {
+		vsnfs_trace(KERN_ERR, "vsnfs_get_root: Getting root inode failed\n");
+		return ERR_CAST(rootinode);
+	}
+
+	ret = vsnfs_superblock_set_dummy_root(sb, rootinode);
+	if (ret != 0)
+		return ERR_PTR(ret);
+
+	mntroot = d_obtain_alias(rootinode);
+	if (IS_ERR(mntroot)) {
+		vsnfs_trace(KERN_ERR, "vsnfs_get_root: Getting root dentry failed\n");
+		return mntroot;
+	}
+
+	if (!mntroot->d_op)
+		mntroot->d_op = server->cl_rpc_ops->dentry_ops;
+
+	return mntroot;
+}
+	
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
 	int ret = 0;
-	struct super_block *s = NULL;
+	struct super_block *s;
 	struct vsnfs_server *server = NULL;
-//	struct vsnfs_fh *mntfh;
-//	struct dentry *mntroot;
-        printk(KERN_ERR "inside vsnfs_getsb\n");
+	struct vsnfs_fh *mntfh;
+	struct dentry *mntroot;
 
-	
+	printk(KERN_ERR "inside vsnfs_getsb\n");
+
 	server = kzalloc(sizeof(struct vsnfs_server), GFP_KERNEL);
 	if (IS_ERR(server)) {
 		ret = PTR_ERR(server);
@@ -218,24 +328,32 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	s = sget(fs_type, NULL, vsnfs_set_super, server);
 	if (IS_ERR(s)) {
 		ret = PTR_ERR(s);
-		goto out;
+		goto out_err_nosb;
 	}
 
+	/* Inline void function */
 	vsnfs_fill_super(s);
 
-/*	mntfh = &server->root_fh;
+	mntfh = &server->root_fh;
 	mntroot = vsnfs_get_root(s, mntfh);
 	if (IS_ERR(mntroot)) {
-		error = PTR_ERR(mntroot);
-		goto err_no_root;*/
+		ret = PTR_ERR(mntroot);
+		goto err_no_root;
+	}
+
+	s->s_flags |= MS_ACTIVE;
+	mnt->mnt_sb = s;
+	mnt->mnt_root = mntroot;
+	ret = 0;
 
 out:
-	kfree(server);
-//	kfree(mntroot);
 	return ret;
-/*err_no_root:
+out_err_nosb:
+	kfree(server);
+	goto out;
+err_no_root:
 	dput(mntroot);
-	goto out;*/
+	goto out;
 }
 
 static void vsnfs_kill_sb(struct super_block *s)

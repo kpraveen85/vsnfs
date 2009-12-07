@@ -40,13 +40,17 @@
 #define VSNFS_VERSION	 1
 #define VSNFS_PORT		 6789
 #define VSNFS_MAXDATA	 8192
+#define VSNFS_DIRSIZE	 4096
 #define VSNFS_MAXNAMLEN	 255
 #define VSNFS_MAXPATHLEN 1024
-#define VSNFS_FHSIZE	 64
+#define VSNFS_FHSIZE	 8
 #define VSNFS_COOKIESIZE 4
 #define VSNFS_NRPROCS    2
 #define VSNFS_TIMEOUT    600
 #define VSNFS_SB_MAGIC	 0x7979
+
+#define VSNFS_REG 		 1
+#define VSNFS_DIR		 2
 
 /* vsnfs stats. These are the error codes that
  * are meaningful in RPC context
@@ -77,21 +81,21 @@ enum vsnfs_stat {
 	VSNFSERR_BAD_COOKIE = 10003,
 };
 
-enum vsnfs_ftype {
+/*enum vsnfs_ftype {
 	VSNFSNON  = 0,
 	VSNFSREG  = 1,
 	VSNFSDIR  = 2
-};
+};*/
 
 
 struct vsnfs_fh {
-	unsigned short size;
+	short int type;
 	unsigned char data[VSNFS_FHSIZE];
 };
 
-struct svc_fh {
+/*struct svc_fh {
         struct vsnfs_fh fh;
-};
+};*/
 
 /* NFS Client Parameters stored in superblock */
 
@@ -134,7 +138,8 @@ static inline struct vsnfs_server *VSNFS_SB(const struct super_block *s)
 
 static inline struct vsnfs_fh *VSNFS_FH(const struct inode *inode)
 {
-	return &VSNFS_I(inode)->fh;
+	//return &VSNFS_I(inode)->fh;
+	return (struct vsnfs_fh *)inode->i_private;
 }
 
 static inline struct vsnfs_server *VSNFS_SERVER(const struct inode *inode)
@@ -159,7 +164,8 @@ static inline int VSNFS_STALE(const struct inode *inode)
 
 static inline __u64 VSNFS_FILEID(const struct inode *inode)
 {
-	return VSNFS_I(inode)->fileid;
+//	return VSNFS_I(inode)->fileid;
+	return inode->i_ino;
 }
 
 static inline void set_vsnfs_fileid(struct inode *inode, __u64 fileid)
@@ -171,7 +177,7 @@ static inline void set_vsnfs_fileid(struct inode *inode, __u64 fileid)
  * Returns a zero iff the size and data fields match.
  * Checks only "size" bytes in the data field.
  */
-static inline int vsnfs_compare_fh(const struct vsnfs_fh *a, const struct vsnfs_fh *b)
+/*static inline int vsnfs_compare_fh(const struct vsnfs_fh *a, const struct vsnfs_fh *b)
 {
 	return a->size != b->size || memcmp(a->data, b->data, a->size) != 0;
 }
@@ -180,7 +186,7 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 {
 	target->size = source->size;
 	memcpy(target->data, source->data, source->size);
-}
+}*/
 
 
 #define VSNFSPROC_NULL		0
