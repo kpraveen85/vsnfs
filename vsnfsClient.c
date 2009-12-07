@@ -46,6 +46,9 @@ struct rpc_stat vsnfs_rpcstat = {
 static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 {
     struct rpc_clnt *clnt = NULL;
+    struct vsnfs_fh *resp;
+    struct vsnfs_getrootargs argp;
+    int ret=VSNFS_OK;
     struct rpc_create_args args =
 		{
 		    .protocol = IPPROTO_TCP,
@@ -60,7 +63,7 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 		};
     printk(KERN_ERR "inside vsnfs_Create_rpcClient\n");
 
-
+ 
 
     printk(KERN_ERR "calling rpc_create\n");
 	
@@ -72,8 +75,30 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
     }
 	printk(KERN_ERR "RPC client created\n");
 	server->cl_rpcclient = clnt;	
-
-/*to be removed*/
+    
+	strcpy(argp.path,server->mnt_path);
+        argp.len=sizeof(server->mnt_path); 
+	resp=kmalloc(sizeof(struct vsnfs_fh),GFP_KERNEL);
+        if(!resp){
+                  printk(KERN_ERR "getroot resp memory alloc failed\n");
+		  return -ENOMEM;
+	}
+        ret = server->cl_rpc_ops->getroot(server, &argp, resp);
+	if(ret == 0)
+		{
+		vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s\n", resp->data );
+		}
+	else
+		{		
+		vsnfs_trace(KERN_DEFAULT, "failure :-( %d\n", ret);
+                kfree(resp);
+                return -VSNFSERR_REMOTE;
+ 		}
+        memcpy(&server->root_fh,resp,sizeof(struct vsnfs_fh));
+        
+	
+    
+/*to be removed
 #if 0
 {
 	int input, output, ret;
@@ -91,7 +116,8 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 }
 #endif
 
-
+*/
+    kfree(resp);
     return 0;
 }
 
@@ -325,6 +351,8 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
       printk(KERN_DEFAULT "failed in vsnfs_create_rpcclient\n");
         goto out;
     }
+       
+          
 	s = sget(fs_type, NULL, vsnfs_set_super, server);
 	if (IS_ERR(s)) {
 		ret = PTR_ERR(s);

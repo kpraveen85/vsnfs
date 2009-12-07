@@ -25,8 +25,10 @@
 #define VSNFS_entry_sz			(VSNFS_filename_sz+3)
 
 #define VSNFS_nullargs_sz		(1)
+#define VSNFS_getrootargs_sz             (VSNFS_path_sz+1)
 #define	VSNFS_readdirargs_sz	(VSNFS_fhandle_sz+2)
 
+#define VSNFS_fh_sz                      8
 #define VSNFS_nullres_sz		(1)
 #define VSNFS_readdirres_sz		(1)
 
@@ -60,7 +62,7 @@ xdr_decode_fhandle(__be32 *p, struct vsnfs_fh *fh)
 /* Encode file handle */
 #if 0
 static int
-vsnfs_xdr_fhandle(struct rpc_rqst *req, __be32 *p, struct vsnfs_fh *fh)
+vsnfs_xdr_fh(struct rpc_rqst *req, __be32 *p, struct vsnfs_fh *fh)
 {
 	p = xdr_encode_fhandle(p, fh);
 	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
@@ -75,6 +77,17 @@ vsnfs_xdr_nullargs(struct rpc_rqst *req, __be32 *p, struct vsnfs_nullargs *args)
 	*p++ = htonl(args->dummy);
 	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
 	return 0;
+}
+
+/* Encode Function for getroot RPC call */
+
+static int
+vsnfs_xdr_getrootargs(struct rpc_rqst *req, __be32 *p, struct vsnfs_getrootargs *args)
+{
+  p=xdr_encode_array(p,args->path,args->len);
+  req->rq_slen = xdr_adjust_iovec(req->rq_svec,p);
+  return 0;
+  
 }
 
 
@@ -125,6 +138,18 @@ vsnfs_xdr_nullres(struct rpc_rqst *req, __be32 *p, struct vsnfs_nullres *res)
 	vsnfs_trace(KERN_DEFAULT, "result %d\n",res->dummy);
 	return 0;
 }
+
+static int
+vsnfs_xdr_fh(struct rpc_rqst *req,  __be32 *p, struct vsnfs_fh *fh)
+{
+	/* VSNFS handles have a fixed length */
+	memcpy(fh->data, p, VSNFS_FHSIZE);
+        p = p + XDR_QUADLEN(VSNFS_FHSIZE);
+        fh->type = ntohl(*p++);
+	
+	return 0;
+}
+
 
 
 /*
@@ -298,7 +323,7 @@ vsnfs_stat_to_errno(int stat)
 
 struct rpc_procinfo vsnfs_procedures[] = {
 	PROC(NULL,			nullargs,		nullres),
-//	PROC(GETROOT,		fhandle,		dec_void),
+	PROC(GETROOT,		getrootargs,		fh),
 //	PROC(LOOKUP,        diropargs,      diropres),
 //	PROC(READ,          readargs,       readres),
 //	PROC(WRITE,			writeargs,		writeres),

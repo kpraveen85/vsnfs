@@ -54,14 +54,14 @@ vsnfs_proc_null(struct vsnfs_server *server, int input, int *output)
 
 
 static int
-vsnfs_proc_get_root(struct vsnfs_server *server, struct vsnfs_fh *fhandle)
+vsnfs_proc_get_root(struct vsnfs_server *server, struct vsnfs_getrootargs *args, struct vsnfs_fh *fh)
 {
 	int status;
 
 	struct rpc_message msg = {
 		.rpc_proc	= &vsnfs_procedures[VSNFSPROC_GETROOT],
-		.rpc_argp	= fhandle,
-		.rpc_resp	= NULL,
+		.rpc_argp	= args,
+		.rpc_resp	= fh,
 	};
     printk("%s: VSNFS call  getroot\n", __func__);
     status = rpc_call_sync(server->cl_rpcclient, &msg, 0);

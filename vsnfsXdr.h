@@ -52,6 +52,12 @@ struct vsnfs_entry {
 	struct vsnfs_fh *	fh;
 };	
 
+struct vsnfs_getrootargs {
+  char *path;
+  unsigned int len;
+};
+
+
 struct vsnfs_rpc_ops {
 	int		version;		/*Protocol Version*/
 	const struct dentry_operations *dentry_ops;
@@ -59,7 +65,7 @@ struct vsnfs_rpc_ops {
 	const struct inode_operations *file_inode_ops;
 
 	int		(*nullproc) (struct vsnfs_server *, int, int*);
-	int		(*getroot) (struct vsnfs_server *, struct vsnfs_fh *);
+        int		(*getroot) (struct vsnfs_server *, struct vsnfs_getrootargs *, struct vsnfs_fh *);
 /*	int		(*lookup)  (struct inode *, struct qstr *, struct vsnfs_fh *);
 	int		(*create)  (struct inode *, struct dentry *, struct iattr *,
 						int, struct vsnfs_fh *);
