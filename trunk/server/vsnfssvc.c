@@ -54,6 +54,9 @@ struct svc_program		vsnfsd_program = {
 
 };
 
+extern struct vsnfs_lookup_table vsnfs_lp_tab; 
+
+
 /*
  * This is the NFS server kernel thread
  */
@@ -301,6 +304,22 @@ int init_vsnfsd(void)
 
 void exit_vsnfsd(void)
 {
+
+  /* TODO: move this lookup table freeing part to a separate function where
+     things are getting freed up and call that function from here */ 
+  struct list_head *pos,*q;
+  struct vsnfs_lookup_table *node;
+
+        list_for_each_safe(pos,q,&vsnfs_lp_tab.list){
+	  node=list_entry(pos,struct vsnfs_lookup_table, list);
+          vsnfs_trace(KERN_DEFAULT, "list del: %ld : %s\n",node->ino,node->path);  
+          kfree(node->path);
+          list_del(pos);
+          kfree(node);
+
+        }
+
+
 	/* should nfsd svc shutdown be called? */
 	vsnfs_trace(KERN_DEFAULT, "\n");
 	/*

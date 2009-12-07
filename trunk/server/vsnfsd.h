@@ -72,7 +72,11 @@
 #define	vsnfserr_locked		cpu_to_be32(VSNFSERR_LOCKED)
 #define	vsnfserr_wrongsec		cpu_to_be32(VSNFSERR_WRONGSEC)
 
-
+struct vsnfs_lookup_table {
+       unsigned long ino;
+       unsigned char *path;
+       struct list_head list; 
+}; 
 
 extern struct svc_version	vsnfsd_version1;
 extern struct svc_program		vsnfsd_program;

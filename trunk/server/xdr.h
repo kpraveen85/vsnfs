@@ -21,10 +21,13 @@ struct vsnfsd_getrootargs
   unsigned int len;
 };
 
-struct vsnfsd_fhandle
+struct vsnfsd_lookupargs
 {
-  struct svc_fh fh;
+  struct vsnfs_fh fh;
+  char *filename;
+  unsigned int len;
 };
+
 
 int
 vsnfssvc_decode_nullargs(struct svc_rqst *rqstp, __be32 *p, struct vsnfsd_nullargs *args);
@@ -38,7 +41,11 @@ int vsnfssvc_decode_getrootargs(struct svc_rqst *, __be32 *,
 
 
 int vsnfssvc_encode_fhandle(struct svc_rqst *, __be32 *,
-			    struct vsnfsd_fhandle *);
+			    struct vsnfs_fh *);
+
+int vsnfssvc_decode_lookupargs(struct svc_rqst *, __be32 *,
+				struct vsnfsd_lookupargs *);
+
 
 
 /*
@@ -46,8 +53,10 @@ int vsnfssvc_encode_fhandle(struct svc_rqst *, __be32 *,
  */
 union vsnfsd_xdrstore {
 	struct vsnfsd_nullargs null; 
-    struct vsnfsd_getrootargs getroot;
-	/*put all the xdr args here*/
+        struct vsnfsd_getrootargs getroot;
+        struct vsnfsd_lookupargs lookup;
+	
+        /*put all the xdr args here*/
 	/* 
 	struct nfsd_sattrargs	sattr;
 	struct nfsd_diropargs	dirop;

@@ -34,19 +34,23 @@
  * Common VSNFS XDR functions as inlines
  */
 static inline __be32 *
-xdr_encode_fhandle(__be32 *p, const struct vsnfs_fh *fhandle)
+xdr_encode_fhandle(__be32 *p, const struct vsnfs_fh *fh)
 {
-	memcpy(p, fhandle->data, VSNFS_FHSIZE);
-	return p + XDR_QUADLEN(VSNFS_FHSIZE);
+	memcpy(p, fh->data, VSNFS_FHSIZE);
+	p=p + XDR_QUADLEN(VSNFS_FHSIZE);
+        *p++=htonl(fh->type);
+	return p;
 }
 
 static inline __be32 *
-xdr_decode_fhandle(__be32 *p, struct vsnfs_fh *fhandle)
+xdr_decode_fhandle(__be32 *p, struct vsnfs_fh *fh)
 {
 	/* VSNFS handles have a fixed length */
-	fhandle->size = VSNFS_FHSIZE;
-	memcpy(fhandle->data, p, VSNFS_FHSIZE);
-	return p + XDR_QUADLEN(VSNFS_FHSIZE);
+	memcpy(fh->data, p, VSNFS_FHSIZE);
+        p = p + XDR_QUADLEN(VSNFS_FHSIZE);
+        fh->type = ntohl(*p++);
+	
+	return p;
 }
 
 /*
