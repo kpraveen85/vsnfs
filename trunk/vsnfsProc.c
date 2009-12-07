@@ -21,6 +21,7 @@
 #include <linux/fs.h>
 #include "vsnfs.h"
 #include "vsnfsXdr.h"
+#include "vsnfsClient.h"
 
 /* vsnfs proc definitions */
 
