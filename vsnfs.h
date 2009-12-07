@@ -45,7 +45,7 @@
 #define VSNFS_MAXPATHLEN 1024
 #define VSNFS_FHSIZE	 8
 #define VSNFS_COOKIESIZE 4
-#define VSNFS_NRPROCS    2
+#define VSNFS_NRPROCS    3
 #define VSNFS_TIMEOUT    600
 #define VSNFS_SB_MAGIC	 0x7979
 
