@@ -143,6 +143,13 @@ static int
 vsnfs_xdr_fh(struct rpc_rqst *req,  __be32 *p, struct vsnfs_fh *fh)
 {
 	/* VSNFS handles have a fixed length */
+  int status;
+
+  if((status = ntohl(*p++))){
+		vsnfs_trace(KERN_DEFAULT, "status %d\n",status);
+		return vsnfs_stat_to_errno(status);
+		}
+
 	memcpy(fh->data, p, VSNFS_FHSIZE);
         p = p + XDR_QUADLEN(VSNFS_FHSIZE);
         fh->type = ntohl(*p++);

@@ -139,7 +139,8 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
 	}
 	else if(S_ISDIR(root->d_inode->i_mode))
 	  resp->type=VSNFS_DIR;        
-  
+        vsnfs_trace(KERN_DEFAULT, "type in server = %d\n",resp->type);
+       
         /* Adding the ino & path to the lookup table */
 
 	/*        INIT_LIST_HEAD(&vsnfs_lp_tab.list);
