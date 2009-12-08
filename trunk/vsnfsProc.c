@@ -54,7 +54,7 @@ vsnfs_proc_null(struct vsnfs_server *server, int input, int *output)
 
 
 static int
-vsnfs_proc_get_root(struct vsnfs_server *server, struct vsnfs_getrootargs *args, struct vsnfs_fh *fh)
+vsnfs_proc_getroot(struct vsnfs_server *server, struct vsnfs_getrootargs *args, struct vsnfs_fh *fh)
 {
 	int status;
 
@@ -97,7 +97,7 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 const struct vsnfs_rpc_ops vsnfs_clientops = {
 	.version		 = VSNFS_VERSION,
 	.nullproc		 = vsnfs_proc_null,
-	.getroot		 = vsnfs_proc_get_root,
+	.getroot		 = vsnfs_proc_getroot,
 	.dentry_ops		 = &vsnfs_dentry_operations,
 	.dir_inode_ops	 = &vsnfs_dir_inode_operations,
 	.file_inode_ops	 = &vsnfs_file_inode_operations,

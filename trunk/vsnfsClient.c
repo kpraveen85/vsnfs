@@ -47,7 +47,11 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 {
     struct rpc_clnt *clnt = NULL;
     struct vsnfs_fh *resp;
-    struct vsnfs_getrootargs argp;
+    struct vsnfs_getrootargs argp =
+      {
+	.path = server->mnt_path,
+        .len  = strlen(server->mnt_path),
+      };
     int ret=VSNFS_OK;
     struct rpc_create_args args =
 		{
@@ -58,9 +62,11 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
     		.servername = server->ip_addr,
     		.program = &vsnfs_program,
     		.version = server->cl_rpc_ops->version,
-    		.authflavor = RPC_AUTH_UNIX,
+    		.authflavor = RPC_AUTH_NULL,
     		.flags = RPC_CLNT_CREATE_NOPING, /* check the flags options */
 		};
+       
+
     printk(KERN_ERR "inside vsnfs_Create_rpcClient\n");
 
  
@@ -76,49 +82,29 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 	printk(KERN_ERR "RPC client created\n");
 	server->cl_rpcclient = clnt;	
     
-	strcpy(argp.path,server->mnt_path);
-        argp.len=sizeof(server->mnt_path); 
-	resp=kmalloc(sizeof(struct vsnfs_fh),GFP_KERNEL);
-        if(!resp){
-                  printk(KERN_ERR "getroot resp memory alloc failed\n");
-		  return -ENOMEM;
+        resp=kmalloc(sizeof(struct vsnfs_fh), GFP_KERNEL);
+	if(!resp){
+	  ret=-ENOMEM;
 	}
+
         ret = server->cl_rpc_ops->getroot(server, &argp, resp);
 	if(ret == 0)
 		{
-		vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s\n", resp->data );
+		  vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s  type: %d\n", resp->data, resp->type );
 		}
 	else
 		{		
 		vsnfs_trace(KERN_DEFAULT, "failure :-( %d\n", ret);
-                kfree(resp);
                 return -VSNFSERR_REMOTE;
  		}
         memcpy(&server->root_fh,resp,sizeof(struct vsnfs_fh));
-        
-	
-    
-/*to be removed
-#if 0
-{
-	int input, output, ret;
-	input = 45;
-	ret = server->cl_rpc_ops->nullproc(server, input, &output);
-	if(ret == 0)
-		{
-		vsnfs_trace(KERN_DEFAULT, "success :-) %d\n", output);
-		}
-	else
-		{		
-		vsnfs_trace(KERN_DEFAULT, "failure :-( %d\n", ret);
-		}
-	BUG_ON(1);	
-}
-#endif
+	vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s\n", server->root_fh.data );
 
-*/
-    kfree(resp);
-    return 0;
+	//	BUG_ON(1);
+      kfree(resp);
+      /* REMOVE THIS RETURN TO PROCEED FURTHER */
+    return -1;
+    // return 0;
 }
 
 /* 2. Filesystem registration and superblock operations */

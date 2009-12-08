@@ -25,12 +25,12 @@
 #define VSNFS_entry_sz			(VSNFS_filename_sz+3)
 
 #define VSNFS_nullargs_sz		(1)
-#define VSNFS_getrootargs_sz             (VSNFS_path_sz+1)
+#define VSNFS_getrootargs_sz             (VSNFS_path_sz)
 #define	VSNFS_readdirargs_sz	(VSNFS_fhandle_sz+2)
 
-#define VSNFS_fh_sz                      8
+#define VSNFS_fh_sz                     (VSNFS_fhandle_sz)
 #define VSNFS_nullres_sz		(1)
-#define VSNFS_readdirres_sz		(1)
+#define VSNFS_readdirres_sz		(VSNFS_fhandle_sz)
 
 /*
  * Common VSNFS XDR functions as inlines

@@ -44,9 +44,9 @@
 #define VSNFS_DIRSIZE	 4096
 #define VSNFS_MAXNAMLEN	 255
 #define VSNFS_MAXPATHLEN 1024
-#define VSNFS_FHSIZE	 8
+#define VSNFS_FHSIZE	 64
 #define VSNFS_COOKIESIZE 4
-#define VSNFS_NRPROCS    3
+#define VSNFS_NRPROCS    10
 #define VSNFS_TIMEOUT    600
 #define VSNFS_SB_MAGIC	 0x7979
 
@@ -104,12 +104,12 @@ struct vsnfs_server {
 	struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
 	const struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
 	struct sockaddr_in		cl_addr;        /* server identifier */
-	size_t					cl_addrlen;
-	int						flags; 
-	int						timeout;
-	char					ip_addr[16];
-	int						server_port;
-	char*					mnt_path; 
+	size_t				cl_addrlen;
+	int				flags; 
+	int				timeout;
+	char				ip_addr[16];
+	int				server_port;
+	char*				mnt_path; 
 	struct vsnfs_fh			root_fh;
 };
 
@@ -191,7 +191,7 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 
 
 #define VSNFSPROC_NULL		0
-#define VSNFSPROC_CREATE	1
+#define VSNFSPROC_GETROOT	1
 #define VSNFSPROC_REMOVE	2
 #define VSNFSPROC_READ		3
 #define VSNFSPROC_WRITE		4
@@ -199,6 +199,6 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 #define VSNFSPROC_RMDIR		6
 #define VSNFSPROC_READDIR	7
 #define VSNFSPROC_LOOKUP	8
-#define VSNFSPROC_GETROOT	9
+#define VSNFSPROC_CREATE	9
 
 #endif
