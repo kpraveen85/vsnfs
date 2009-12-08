@@ -52,11 +52,6 @@ extern const struct file_operations vsnfs_file_operations;
 extern const struct inode_operations vsnfs_dir_inode_operations;
 extern const struct file_operations vsnfs_dir_operations;
 extern const struct dentry_operations vsnfs_dentry_operations;
-
-/*
- * vsnfs/read_write.c
- */
-
-#define TO_BE_FILLED 0
+extern int vsnfs_permission(struct inode *, int);
 
 #endif

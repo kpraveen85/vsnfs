@@ -24,6 +24,7 @@
 #include <linux/list.h>
 #include <linux/vfs.h>
 #include <linux/fs.h>
+#include <linux/namei.h>
 #include <linux/pagemap.h>
 #include <linux/bitops.h>
 #include <linux/sunrpc/debug.h>
