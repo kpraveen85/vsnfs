@@ -103,8 +103,8 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 	//	BUG_ON(1);
       kfree(resp);
       /* REMOVE THIS RETURN TO PROCEED FURTHER */
-    return -1;
-    // return 0;
+      //    return -1;
+    return 0;
 }
 
 /* 2. Filesystem registration and superblock operations */
