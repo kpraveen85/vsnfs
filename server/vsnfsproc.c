@@ -110,17 +110,25 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
         struct nameidata *nd;
         struct dentry *root;
         int ret=vsnfs_ok;
-        struct vsnfs_lookup_table *node;
-  
+	// struct vsnfs_lookup_table *node;
+	char *path;
         vsnfs_trace(KERN_DEFAULT, "in getroot\n");
 	nd = kmalloc(sizeof(*nd), GFP_KERNEL);
         if (unlikely(!nd)){
                 return -ENOMEM;
 	}
       	memset(nd,0,sizeof(*nd));
-	ret = path_lookup(argp->path, 0, nd);
+        
+        path = kmalloc((argp->len)+1, GFP_KERNEL);
+        if (unlikely(!path)){
+                return -ENOMEM;
+	}
+        memcpy(path,argp->path,argp->len);
+      	path[argp->len]='\0';
+        
+	ret = path_lookup(path, 0, nd);
 	if(ret<0)
-          vsnfs_trace(KERN_DEFAULT, "failed in path_lookup\n");
+          vsnfs_trace(KERN_DEFAULT, "failed in path_lookup: %s\n",path);
         root=dget(nd->path.dentry);
         path_put(&nd->path);
         vsnfs_trace(KERN_DEFAULT, "inode no = %ld\n",root->d_inode->i_ino);
@@ -134,7 +142,7 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
   
         /* Adding the ino & path to the lookup table */
 
-        INIT_LIST_HEAD(&vsnfs_lp_tab.list);
+	/*        INIT_LIST_HEAD(&vsnfs_lp_tab.list);
         node=(struct vsnfs_lookup_table *)kmalloc(sizeof(struct vsnfs_lookup_table), GFP_KERNEL);
         node->ino=root->d_inode->i_ino;
         node->path=kstrndup(argp->path,strlen(argp->path),GFP_KERNEL);
@@ -143,10 +151,11 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
           goto out_getroot;
 	} 
         list_add(&(node->list),&(vsnfs_lp_tab.list));
-                
+	*/      
  out_getroot:        
         dput(root);
         kfree(nd);
+        kfree(path);
 	return ret;
 
 
@@ -163,7 +172,7 @@ vsnfsd_proc_getroot(struct svc_rqst *rqstp, struct vsnfsd_getrootargs *argp, str
 
 #define RC_NOCACHE 0
 
-static struct svc_procedure		vsnfsd_procedures1[] = {
+static struct svc_procedure		vsnfsd_procedures1[VSNFS_NRPROCS] = {
 	[VSNFSPROC_NULL] = {
 		.pc_func = (svc_procfunc) vsnfsd_proc_null,
 		.pc_decode = (kxdrproc_t) vsnfssvc_decode_nullargs,

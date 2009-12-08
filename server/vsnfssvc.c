@@ -42,6 +42,13 @@ struct svc_stat		vsnfsd_svcstats = {
 	.program	= &vsnfsd_program,
 };
 
+static int vsnfs_authentication(struct svc_rqst * rqst)
+{
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	return SVC_OK;
+}
+
+
 /* vsnfs rpc program object */
 struct svc_program		vsnfsd_program = {
 	.pg_prog		= VSNFS_PROGRAM,		/* program number */
@@ -50,7 +57,7 @@ struct svc_program		vsnfsd_program = {
 	.pg_name		= "vsnfsd",		/* program name */
 	.pg_class		= "vsnfsd",		/* authentication class */
 	.pg_stats		= &vsnfsd_svcstats,
-	.pg_authenticate	= &svc_set_client,	/* export authentication */
+	.pg_authenticate	= &vsnfs_authentication, /*&svc_set_client,	 export authentication */
 
 };
 
@@ -119,6 +126,30 @@ vsnfsd(void *vrqstp)
 		}
 
 		/* Locking -  exp_readlock() */
+
+#ifdef VSNFS_DEBUG		
+		{
+		struct kvec		*argv = &rqstp->rq_arg.head[0];		
+		u32 		dir,rpc_vers,prog,vers,proc;
+		void *base= argv->iov_base;
+		size_t size = argv->iov_len;
+		
+		svc_getu32(argv);
+		
+		dir  = svc_getnl(argv);
+		
+		rpc_vers = svc_getnl(argv);
+		
+		prog = svc_getnl(argv);	/* program number */
+		vers = svc_getnl(argv);	/* version number */
+		proc = svc_getnl(argv);	/* procedure number */
+		vsnfs_trace(KERN_DEFAULT, "%u %u %u %u %u\n", dir, rpc_vers, prog, vers, proc);
+
+		argv->iov_base = base;
+		argv->iov_len= size;
+		}
+#endif
+
 		svc_process(rqstp);
 
 	}
@@ -307,8 +338,8 @@ void exit_vsnfsd(void)
 
   /* TODO: move this lookup table freeing part to a separate function where
      things are getting freed up and call that function from here */ 
-  struct list_head *pos,*q;
-  struct vsnfs_lookup_table *node;
+  /*   struct list_head *pos,*q;
+         struct vsnfs_lookup_table *node;
 
         list_for_each_safe(pos,q,&vsnfs_lp_tab.list){
 	  node=list_entry(pos,struct vsnfs_lookup_table, list);
@@ -318,7 +349,7 @@ void exit_vsnfsd(void)
           kfree(node);
 
         }
-
+  */
 
 	/* should nfsd svc shutdown be called? */
 	vsnfs_trace(KERN_DEFAULT, "\n");
