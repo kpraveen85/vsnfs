@@ -241,18 +241,19 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 
 		inode->i_ino = hash;
 		inode->i_flags |= S_NOATIME|S_NOCMTIME;
-		inode->i_mode = S_IALLUGO;
 
 		inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->file_inode_ops;
 		if (fh->type == VSNFS_REG) {
 			printk("Came in regular file\n");
 			inode->i_fop = &vsnfs_file_operations;
+			inode->i_mode = (S_IFREG | S_IALLUGO);
 //			inode->i_data.a_ops = &vsnfs_file_aops;
 //			inode->i_size = VSNFS_MAXDATA;
 		} else if (fh->type == VSNFS_DIR) {
 			printk("Came in directory\n");
 			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
 			inode->i_fop = &vsnfs_dir_operations;
+			inode->i_mode = (S_IFDIR | S_IALLUGO);
 //			inode->i_size = VSNFS_DIRSIZE;
 			inode->i_nlink = 2;
 		} else {
@@ -270,7 +271,7 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	} else
 		vsnfs_trace(KERN_INFO, "Inode Found\n");
 
-	printk("NFS: nfs_fhget(%s/%Ld ct=%d)\n",
+	printk("VSNFS: nfs_fhget(%s/%Ld ct=%d)\n",
 		inode->i_sb->s_id,
 		(long long)VSNFS_FILEID(inode),
 		atomic_read(&inode->i_count));
@@ -300,57 +301,6 @@ static int vsnfs_superblock_set_dummy_root(struct super_block *sb, struct inode 
 	return 0;
 }
 	
-struct dentry *vsnfs_d_obtain_alias(struct inode *inode)
-{
-    static const struct qstr anonstring = { .name = "" };
-    struct dentry *tmp;
-    struct dentry *res;
-
-    if (!inode)
-        return ERR_PTR(-ESTALE);
-    if (IS_ERR(inode))
-        return ERR_CAST(inode);
-
-	printk("In wrapper before find_alias\n");
-
-    res = d_find_alias(inode);
-    if (res)
-        goto out_iput;
-
-	return NULL;
-    tmp = d_alloc(NULL, &anonstring);
-    if (!tmp) {
-        res = ERR_PTR(-ENOMEM);
-        goto out_iput;
-    }
-    tmp->d_parent = tmp; /* make sure dput doesn't croak */
-/*
-    spin_lock(&dcache_lock);
-    res = __d_find_alias(inode, 0);
-    if (res) {
-        spin_unlock(&dcache_lock);
-        dput(tmp);
-        goto out_iput;
-    }
-*/
-    /* attach a disconnected dentry */
-    spin_lock(&tmp->d_lock);
-    tmp->d_sb = inode->i_sb;
-    tmp->d_inode = inode;
-    tmp->d_flags |= DCACHE_DISCONNECTED;
-    tmp->d_flags &= ~DCACHE_UNHASHED;
-    list_add(&tmp->d_alias, &inode->i_dentry);
-    hlist_add_head(&tmp->d_hash, &inode->i_sb->s_anon);
-    spin_unlock(&tmp->d_lock);
-
-    spin_unlock(&dcache_lock);
-    return tmp;
-
- out_iput:
-    iput(inode);
-    return res;
-}
-
 struct dentry *vsnfs_get_root(struct super_block *sb, struct vsnfs_fh *mntfh)
 {
 	struct vsnfs_server *server = VSNFS_SB(sb);
@@ -422,6 +372,7 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	mntroot = vsnfs_get_root(s, mntfh);
 	if (IS_ERR(mntroot) || !mntroot) {
 		ret = PTR_ERR(mntroot);
+		printk("Getting Mntroot failed:%d\n",ret);
 		goto err_no_root;
 	}
 
