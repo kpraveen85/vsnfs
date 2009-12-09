@@ -69,8 +69,6 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 
     printk(KERN_ERR "inside vsnfs_Create_rpcClient\n");
 
- 
-
     printk(KERN_ERR "calling rpc_create\n");
 	
     clnt = rpc_create(&args);
@@ -123,20 +121,33 @@ static void vsnfs_umount_begin(struct super_block *sb)
 		rpc_killall_tasks(rpc);
 }
 
-struct inode *vsnfs_alloc_inode(struct super_block *sb)
+int vsnfs_write_inode(struct inode *inode, int sync)
+{
+	printk("Inside wrrite inode\n");
+	return EOPNOTSUPP;
+}
+
+void vsnfs_clear_inode(struct inode *inode)
+{
+    printk("Inside clear inode\n");
+}
+
+
+/*struct inode *vsnfs_alloc_inode(struct super_block *sb)
 {
 	struct vsnfs_inode *nfsi;
 	nfsi = (struct vsnfs_inode *)kmalloc(sizeof(struct vsnfs_inode), GFP_KERNEL);
 	if (!nfsi)
 		return NULL;
-//	nfsi->fh = 
+	nfsi->vfs_inode = (struct inode *)kmalloc(sizeof(struct inode), GFP_KERNEL);
 	return &nfsi->vfs_inode;
 }
 
 void vsnfs_destroy_inode(struct inode *inode)
 {
+	
 	kfree(VSNFS_I(inode));
-}
+}*/
 
 static struct file_system_type vsnfs_type = {
 	.name		= "vsnfs",
@@ -145,8 +156,10 @@ static struct file_system_type vsnfs_type = {
 };
 
 static const struct super_operations vsnfs_sops = {
-	.alloc_inode	= vsnfs_alloc_inode,
-	.destroy_inode	= vsnfs_destroy_inode,
+	.alloc_inode	= NULL,
+	.destroy_inode	= NULL,
+	.write_inode	= vsnfs_write_inode,
+	.clear_inode	= vsnfs_clear_inode,
 	.umount_begin	= vsnfs_umount_begin,
 };
 
@@ -168,10 +181,7 @@ int VSNFSClientCleanup(void)
 static inline
 void vsnfs_fill_super(struct super_block *sb)
 {
-	struct inode *root = iget_locked(sb, 2);
-        
-        printk(KERN_ERR "inside vsnfs_fill_super\n");
-	sb->s_root = d_alloc_root(root);
+	printk(KERN_ERR "inside vsnfs_fill_super\n");
 	sb->s_blocksize_bits = VSNFS_FILE_BSIZE_BITS;
 	sb->s_blocksize = VSNFS_FILE_IO_SIZE;
 	sb->s_magic = VSNFS_SB_MAGIC;
@@ -194,14 +204,14 @@ static int vsnfs_set_super(struct super_block *s, void *data)
 static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name, void *raw_data)
 {
 	int ret = 0;
-	
+	printk(KERN_INFO "Came in init server\n");	
     server->cl_rpc_ops = &vsnfs_clientops;
 	ret = vsnfs_parse_mount_options((char *)raw_data, dev_name, server);
 	if (ret < 0) {
 		vsnfs_trace(KERN_DEFAULT, "Error parsing mount options\n");
 		goto out;
 		}
-	
+	printk(KERN_INFO "Contents of server are Mnt_Path:%s\n", server->mnt_path);
 	out:
 		return ret;		
 }
@@ -217,6 +227,8 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	char *tmp = NULL;
 	tmp = fh->data;
 	hash = simple_strtoul(fh->data, &tmp, 0);
+
+	printk(KERN_INFO "Received hash valuse %lu\n", hash);
 	
 	inode = iget_locked(sb, hash);
 	if (inode == NULL) {
@@ -233,14 +245,16 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 
 		inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->file_inode_ops;
 		if (fh->type == VSNFS_REG) {
+			printk("Came in regular file\n");
 			inode->i_fop = &vsnfs_file_operations;
 //			inode->i_data.a_ops = &vsnfs_file_aops;
-			inode->i_size = VSNFS_MAXDATA;
+//			inode->i_size = VSNFS_MAXDATA;
 		} else if (fh->type == VSNFS_DIR) {
+			printk("Came in directory\n");
 			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
 			inode->i_fop = &vsnfs_dir_operations;
-			inode->i_size = VSNFS_DIRSIZE;
-			inode->i_nlink = 2;
+//			inode->i_size = VSNFS_DIRSIZE;
+//			inode->i_nlink = 2;
 		} else {
 			vsnfs_trace(KERN_ERR, "vsnfs_fhget: Invalid filetype. Aborting\n");
 			unlock_new_inode(inode);
@@ -337,7 +351,6 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
       printk(KERN_DEFAULT "failed in vsnfs_create_rpcclient\n");
         goto out;
     }
-       
           
 	s = sget(fs_type, NULL, vsnfs_set_super, server);
 	if (IS_ERR(s)) {
@@ -350,7 +363,7 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 
 	mntfh = &server->root_fh;
 	mntroot = vsnfs_get_root(s, mntfh);
-	if (IS_ERR(mntroot)) {
+	if (IS_ERR(mntroot) || !mntroot) {
 		ret = PTR_ERR(mntroot);
 		goto err_no_root;
 	}
