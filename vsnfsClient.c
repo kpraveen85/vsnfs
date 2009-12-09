@@ -14,6 +14,7 @@
 #include <linux/stat.h>
 #include <linux/namei.h>
 #include <linux/mount.h>
+#include <linux/dcache.h>
 #include <linux/sunrpc/xprtsock.h>
 #include <linux/sunrpc/xprtrdma.h>
 #include <linux/sunrpc/msg_prot.h>
@@ -152,7 +153,7 @@ void vsnfs_destroy_inode(struct inode *inode)
 static struct file_system_type vsnfs_type = {
 	.name		= "vsnfs",
 	.get_sb		= vsnfs_get_sb,
-	.kill_sb	= vsnfs_kill_sb
+	.kill_sb	= vsnfs_kill_sb,
 };
 
 static const struct super_operations vsnfs_sops = {
@@ -231,13 +232,12 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	printk(KERN_INFO "Received hash valuse %lu\n", hash);
 	
 	inode = iget_locked(sb, hash);
-	if (inode == NULL) {
+	if (inode == NULL || IS_ERR(inode)) {
 		inode = ERR_PTR(-ENOMEM);
 		goto out_no_inode;
 	}
 
 	if (inode->i_state & I_NEW) {
-		inode_init_once(inode);
 
 		inode->i_ino = hash;
 		inode->i_flags |= S_NOATIME|S_NOCMTIME;
@@ -254,7 +254,7 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
 			inode->i_fop = &vsnfs_dir_operations;
 //			inode->i_size = VSNFS_DIRSIZE;
-//			inode->i_nlink = 2;
+			inode->i_nlink = 2;
 		} else {
 			vsnfs_trace(KERN_ERR, "vsnfs_fhget: Invalid filetype. Aborting\n");
 			unlock_new_inode(inode);
@@ -269,6 +269,11 @@ vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 		unlock_new_inode(inode);
 	} else
 		vsnfs_trace(KERN_INFO, "Inode Found\n");
+
+	printk("NFS: nfs_fhget(%s/%Ld ct=%d)\n",
+		inode->i_sb->s_id,
+		(long long)VSNFS_FILEID(inode),
+		atomic_read(&inode->i_count));
 out:
 	return inode;
 
@@ -282,6 +287,7 @@ static int vsnfs_superblock_set_dummy_root(struct super_block *sb, struct inode 
 	if (sb->s_root == NULL) {
 		sb->s_root = d_alloc_root(inode);
 		if (sb->s_root == NULL) {
+			printk("Error in d_alloc\n");
 			iput(inode);
 			return -ENOMEM;
 		}
@@ -294,16 +300,66 @@ static int vsnfs_superblock_set_dummy_root(struct super_block *sb, struct inode 
 	return 0;
 }
 	
+struct dentry *vsnfs_d_obtain_alias(struct inode *inode)
+{
+    static const struct qstr anonstring = { .name = "" };
+    struct dentry *tmp;
+    struct dentry *res;
+
+    if (!inode)
+        return ERR_PTR(-ESTALE);
+    if (IS_ERR(inode))
+        return ERR_CAST(inode);
+
+	printk("In wrapper before find_alias\n");
+
+    res = d_find_alias(inode);
+    if (res)
+        goto out_iput;
+
+	return NULL;
+    tmp = d_alloc(NULL, &anonstring);
+    if (!tmp) {
+        res = ERR_PTR(-ENOMEM);
+        goto out_iput;
+    }
+    tmp->d_parent = tmp; /* make sure dput doesn't croak */
+/*
+    spin_lock(&dcache_lock);
+    res = __d_find_alias(inode, 0);
+    if (res) {
+        spin_unlock(&dcache_lock);
+        dput(tmp);
+        goto out_iput;
+    }
+*/
+    /* attach a disconnected dentry */
+    spin_lock(&tmp->d_lock);
+    tmp->d_sb = inode->i_sb;
+    tmp->d_inode = inode;
+    tmp->d_flags |= DCACHE_DISCONNECTED;
+    tmp->d_flags &= ~DCACHE_UNHASHED;
+    list_add(&tmp->d_alias, &inode->i_dentry);
+    hlist_add_head(&tmp->d_hash, &inode->i_sb->s_anon);
+    spin_unlock(&tmp->d_lock);
+
+    spin_unlock(&dcache_lock);
+    return tmp;
+
+ out_iput:
+    iput(inode);
+    return res;
+}
 
 struct dentry *vsnfs_get_root(struct super_block *sb, struct vsnfs_fh *mntfh)
 {
 	struct vsnfs_server *server = VSNFS_SB(sb);
 	struct dentry 		*mntroot;
-	struct inode 		*rootinode;
+	struct inode 		*rootinode = NULL;
 	int 				ret;
 
 	rootinode = vsnfs_fhget(sb, mntfh);
-	if (IS_ERR(rootinode)) {
+	if (IS_ERR(rootinode) || !rootinode) {
 		vsnfs_trace(KERN_ERR, "vsnfs_get_root: Getting root inode failed\n");
 		return ERR_CAST(rootinode);
 	}
@@ -328,7 +384,7 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *raw_data, struct vfsmount *mnt)
 {
 	int ret = 0;
-	struct super_block *s;
+	struct super_block *s = NULL;
 	struct vsnfs_server *server = NULL;
 	struct vsnfs_fh *mntfh;
 	struct dentry *mntroot;
@@ -353,13 +409,14 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
     }
           
 	s = sget(fs_type, NULL, vsnfs_set_super, server);
-	if (IS_ERR(s)) {
+	if (IS_ERR(s) || !s) {
 		ret = PTR_ERR(s);
 		goto out_err_nosb;
 	}
 
 	/* Inline void function */
-	vsnfs_fill_super(s);
+	if (!s->s_root)
+		vsnfs_fill_super(s);
 
 	mntfh = &server->root_fh;
 	mntroot = vsnfs_get_root(s, mntfh);
