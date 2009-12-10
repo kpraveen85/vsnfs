@@ -9,7 +9,8 @@
  * (C) Praveen Krishnamoorthy <kpraveen85@gmail.com>
  * (C) Prabakar Radhakrishnan <prabakarcse@gmail.com>
  */
-
+#include <linux/dcache.h>
+#include <linux/namei.h>
 #include "vsnfs.h"
 #include "vsnfsClient.h"
 
@@ -64,11 +65,51 @@ vsnfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidat
     return 0;
 }
 
+static int
+vsnfs_do_lookup(struct inode *dir, struct qstr *path, struct vsnfs_fh *fh)
+{
+	return 0;
+}
+
 static struct dentry *
 vsnfs_lookup(struct inode *dir, struct dentry * dentry, struct nameidata *nd)
 {
-    vsnfs_trace(KERN_INFO, "In Create\n");
-    return 0;
+	int ret;
+	struct vsnfs_fh *newfh = (struct vsnfs_fh *)kmalloc(sizeof(struct vsnfs_fh), GFP_KERNEL);
+	struct inode *inode = NULL;
+
+	vsnfs_trace(KERN_INFO, "VSNFS: lookup(%s/%s)\n",
+		dentry->d_parent->d_name.name, dentry->d_name.name);
+
+	ret = -ENAMETOOLONG;
+
+	if(dentry->d_name.len > VSNFS_MAXNAMLEN)
+		goto out;
+
+	ret = -ENOMEM;
+	dentry->d_op = &vsnfs_dentry_operations;
+
+	ret = vsnfs_do_lookup(dir, &dentry->d_name, newfh);
+	if (ret == -ENOENT)
+		goto no_entry;
+	if (ret < 0)
+		goto out;
+
+	ret = -EINVAL; /* We don't have permission checks */
+	inode = vsnfs_fhget(dentry->d_sb, newfh);
+	if (IS_ERR(inode))
+		goto out;
+
+no_entry:
+	ret = 0;
+	dentry = d_materialise_unique(dentry, inode);
+	if (IS_ERR(dentry)) { 
+		vsnfs_trace(KERN_ERR, "vsnfs_lookup:Error allocating dentry:%ld\n", PTR_ERR(dentry));
+		return dentry;
+	}
+	return dentry;
+out:
+    return ERR_PTR(ret);
 }
 
 static int 

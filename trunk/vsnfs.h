@@ -113,25 +113,12 @@ struct vsnfs_server {
 	struct vsnfs_fh			root_fh;
 };
 
-struct vsnfs_inode {
-	__u64				fileid;	/* inode number */
-	struct vsnfs_fh		fh; /* vsnfs filehandle */
-	unsigned long		flags;
-	struct inode		vfs_inode;
-};
-
 /*
  * Inode flags as bit offsets
  */
 
 #define VSNFS_INO_STALE		(0)	/* Stale Inode */
 #define VSNFS_INO_FLUSH		(4)	/* Due for flushing */
-
-static inline struct vsnfs_inode *VSNFS_I(const struct inode *inode)
-{
-	return container_of(inode, struct vsnfs_inode, vfs_inode);
-}
-
 static inline struct vsnfs_server *VSNFS_SB(const struct super_block *s)
 {
 	return (struct vsnfs_server *)(s->s_fs_info);
@@ -158,20 +145,10 @@ static inline const struct vsnfs_rpc_ops *VSNFS_PROTO(const struct inode *inode)
 	return VSNFS_SERVER(inode)->cl_rpc_ops;
 }
 
-static inline int VSNFS_STALE(const struct inode *inode)
-{
-	return test_bit(VSNFS_INO_STALE, &VSNFS_I(inode)->flags);
-}
-
 static inline __u64 VSNFS_FILEID(const struct inode *inode)
 {
 //	return VSNFS_I(inode)->fileid;
 	return inode->i_ino;
-}
-
-static inline void set_vsnfs_fileid(struct inode *inode, __u64 fileid)
-{
-	VSNFS_I(inode)->fileid = fileid;
 }
 
 /*
