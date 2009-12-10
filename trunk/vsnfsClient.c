@@ -44,6 +44,11 @@ struct rpc_stat vsnfs_rpcstat = {
 	.program = &vsnfs_program
 };
 
+/**
+ * vsnfs_create_rpcclient: - Given the server details this creates
+ * 								the RPC client.
+ */
+
 static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 {
 	struct rpc_clnt *clnt = NULL;
@@ -57,7 +62,6 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 		.protocol = IPPROTO_TCP,
 		.address = (struct sockaddr *)&server->cl_addr,
 		.addrsize = server->cl_addrlen,
-		//.timeout  = &server->timeout,
 		.servername = server->ip_addr,
 		.program = &vsnfs_program,
 		.version = server->cl_rpc_ops->version,
@@ -110,12 +114,14 @@ static int vsnfs_get_sb(struct file_system_type *, int, const char *,
 			void *, struct vfsmount *);
 static void vsnfs_kill_sb(struct super_block *);
 
+/**
+ * vsnfs_umount_begin: -  Used to unmount the filesystem
+ */
 static void vsnfs_umount_begin(struct super_block *sb)
 {
 	struct vsnfs_server *server = VSNFS_SB(sb);
 	struct rpc_clnt *rpc;
 
-	/* -EIO all pending I/O */
 	if ((rpc = server->cl_rpcclient) != NULL)
 		rpc_killall_tasks(rpc);
 }
@@ -131,22 +137,6 @@ void vsnfs_clear_inode(struct inode *inode)
 	printk("Inside clear inode\n");
 }
 
-/*struct inode *vsnfs_alloc_inode(struct super_block *sb)
-{
-	struct vsnfs_inode *nfsi;
-	nfsi = (struct vsnfs_inode *)kmalloc(sizeof(struct vsnfs_inode), GFP_KERNEL);
-	if (!nfsi)
-		return NULL;
-	nfsi->vfs_inode = (struct inode *)kmalloc(sizeof(struct inode), GFP_KERNEL);
-	return &nfsi->vfs_inode;
-}
-
-void vsnfs_destroy_inode(struct inode *inode)
-{
-	
-	kfree(VSNFS_I(inode));
-}*/
-
 static struct file_system_type vsnfs_type = {
 	.name = "vsnfs",
 	.get_sb = vsnfs_get_sb,
@@ -161,6 +151,10 @@ static const struct super_operations vsnfs_sops = {
 	.umount_begin = vsnfs_umount_begin,
 };
 
+/**
+ * VSNFSClientInit: - First routine called to register
+ * 						a filesystem.
+ */
 int VSNFSClientInit(void)
 {
 	int ret = 0;
@@ -171,11 +165,19 @@ int VSNFSClientInit(void)
 	return ret;
 }
 
+/**
+ * VSNFSClientCleanup: - Last routine called to unregister
+ *                      a filesystem.
+ */
 int VSNFSClientCleanup(void)
 {
 	return unregister_filesystem(&vsnfs_type);
 }
 
+/**
+ * vsnfs_fill_super: - Helper to initialize the superblock.
+ *
+ */
 static inline void vsnfs_fill_super(struct super_block *sb)
 {
 	printk(KERN_ERR "inside vsnfs_fill_super\n");
@@ -190,6 +192,10 @@ static inline void vsnfs_fill_super(struct super_block *sb)
 	sb->s_op = &vsnfs_sops;
 }
 
+/**
+ * vsnfs_set_super: - Helper to set the superblock with the
+ *					private info which is of type vsnfs_server
+ */
 static int vsnfs_set_super(struct super_block *s, void *data)
 {
 	struct vsnfs_server *server = data;
@@ -197,7 +203,10 @@ static int vsnfs_set_super(struct super_block *s, void *data)
 	return set_anon_super(s, server);
 }
 
-/* To set the super block dentry */
+/**
+ * vsnfs_init_server: - Helper to handle mount option handling and to
+ *					register a dev ID for VSNFS.
+ */
 static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name,
 			     void *raw_data)
 {
@@ -216,7 +225,13 @@ static int vsnfs_init_server(struct vsnfs_server *server, const char *dev_name,
 }
 
 /*
- * Wrapper for iget. We look up by inode number only
+ * vsnfs_fhget:- Wrapper for iget. 
+ *
+ *	1. We look up by inode number only.
+ *	2. we dont have out any of our own alloc inode funtions.
+ *	3. All we do is to store the vsnfs filehandle
+ *	we receive from server in the inode private region.
+ *  4. We support only 2 types of files. DIR and REG 
  */
 struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 {
@@ -225,8 +240,6 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	char *tmp = NULL;
 	tmp = fh->data;
 	hash = simple_strtoul(fh->data, &tmp, 0);
-
-	printk(KERN_INFO "Received hash valuse %lu\n", hash);
 
 	inode = iget_locked(sb, hash);
 	if (inode == NULL || IS_ERR(inode)) {
@@ -241,17 +254,12 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 
 		inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->file_inode_ops;
 		if (fh->type == VSNFS_REG) {
-			printk("Came in regular file\n");
 			inode->i_fop = &vsnfs_file_operations;
 			inode->i_mode = (S_IFREG | S_IALLUGO);
-//                      inode->i_data.a_ops = &vsnfs_file_aops;
-//                      inode->i_size = VSNFS_MAXDATA;
 		} else if (fh->type == VSNFS_DIR) {
-			printk("Came in directory\n");
 			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
 			inode->i_fop = &vsnfs_dir_operations;
 			inode->i_mode = (S_IFDIR | S_IALLUGO);
-//                      inode->i_size = VSNFS_DIRSIZE;
 			inode->i_nlink = 2;
 		} else {
 			vsnfs_trace(KERN_ERR,
@@ -280,6 +288,10 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	goto out;
 }
 
+/**
+ * vsnfs_superblock_set_dummy :- A helper function to allocate and
+ *			 handle super block root dentry.
+ */
 static int vsnfs_superblock_set_dummy_root(struct super_block *sb,
 					   struct inode *inode)
 {
@@ -299,6 +311,11 @@ static int vsnfs_superblock_set_dummy_root(struct super_block *sb,
 	return 0;
 }
 
+/**
+ * vsnfs_get_root :- Main funtion that gets invoked immediately after sget.
+ *					Takes superblock and the received mount file handle from
+ *					the vsnfs server and try to allocate root inode and root dentry.
+ */
 struct dentry *vsnfs_get_root(struct super_block *sb, struct vsnfs_fh *mntfh)
 {
 	struct vsnfs_server *server = VSNFS_SB(sb);
@@ -330,6 +347,10 @@ struct dentry *vsnfs_get_root(struct super_block *sb, struct vsnfs_fh *mntfh)
 	return mntroot;
 }
 
+/**
+ * vsnfs_get_sb :- The ->get_sb procedure for vsnfs
+ *
+ */
 static int vsnfs_get_sb(struct file_system_type *fs_type,
 			int flags, const char *dev_name, void *raw_data,
 			struct vfsmount *mnt)
@@ -339,8 +360,6 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	struct vsnfs_server *server = NULL;
 	struct vsnfs_fh *mntfh;
 	struct dentry *mntroot;
-
-	printk(KERN_ERR "inside vsnfs_getsb\n");
 
 	server = kzalloc(sizeof(struct vsnfs_server), GFP_KERNEL);
 	if (IS_ERR(server)) {
@@ -382,12 +401,12 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 	mnt->mnt_root = mntroot;
 	ret = 0;
 
-      out:
+out:
 	return ret;
-      out_err_nosb:
+out_err_nosb:
 	kfree(server);
 	goto out;
-      err_no_root:
+err_no_root:
 	dput(mntroot);
 	goto out;
 }
@@ -395,7 +414,7 @@ static int vsnfs_get_sb(struct file_system_type *fs_type,
 static void vsnfs_kill_sb(struct super_block *s)
 {
 	struct vsnfs_server *server = VSNFS_SB(s);
-	printk("Inside kill_sb\n");
+	vsnfs_trace(KERN_INFO, "Inside kill_sb\n");
 
 	kill_anon_super(s);
 	kfree(server);

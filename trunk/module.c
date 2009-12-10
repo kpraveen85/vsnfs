@@ -4,7 +4,9 @@
  * module.c
  * 
  * File that holds all the act together. Contains 
- * initialization routines.
+ * initialization routines. In case if any module level
+ * parameters need to evaluated or used you could use this
+ * file.
  *
  * (C) Karthik Balaji <findkb@gmail.com>
  *
