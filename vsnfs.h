@@ -88,7 +88,6 @@ enum vsnfs_stat {
 	VSNFSDIR  = 2
 };*/
 
-
 struct vsnfs_fh {
 	short int type;
 	unsigned char data[VSNFS_FHSIZE];
@@ -101,16 +100,16 @@ struct vsnfs_fh {
 /* NFS Client Parameters stored in superblock */
 
 struct vsnfs_server {
-	struct rpc_clnt*		cl_rpcclient;  /* RPC client handle */
-	const struct vsnfs_rpc_ops*	cl_rpc_ops;    /* VSNFS protocol vector */
-	struct sockaddr_in		cl_addr;        /* server identifier */
-	size_t				cl_addrlen;
-	int				flags; 
-	int				timeout;
-	char				ip_addr[16];
-	int				server_port;
-	char*				mnt_path; 
-	struct vsnfs_fh			root_fh;
+	struct rpc_clnt *cl_rpcclient;	/* RPC client handle */
+	const struct vsnfs_rpc_ops *cl_rpc_ops;	/* VSNFS protocol vector */
+	struct sockaddr_in cl_addr;	/* server identifier */
+	size_t cl_addrlen;
+	int flags;
+	int timeout;
+	char ip_addr[16];
+	int server_port;
+	char *mnt_path;
+	struct vsnfs_fh root_fh;
 };
 
 /*
@@ -147,7 +146,7 @@ static inline const struct vsnfs_rpc_ops *VSNFS_PROTO(const struct inode *inode)
 
 static inline __u64 VSNFS_FILEID(const struct inode *inode)
 {
-//	return VSNFS_I(inode)->fileid;
+//      return VSNFS_I(inode)->fileid;
 	return inode->i_ino;
 }
 
@@ -165,7 +164,6 @@ static inline void vsnfs_copy_fh(struct vsnfs_fh *target, const struct vsnfs_fh 
 	target->size = source->size;
 	memcpy(target->data, source->data, source->size);
 }*/
-
 
 #define VSNFSPROC_NULL		0
 #define VSNFSPROC_GETROOT	1

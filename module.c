@@ -22,8 +22,8 @@
 static int
 __init vsnfs_init(void)
 {
-        int ret;
-        printk(KERN_ERR "in vsnfs_init\n");
+	int ret;
+	printk(KERN_ERR "in vsnfs_init\n");
 	ret = VSNFSClientInit();
 	if (ret < 0)
 		printk(KERN_ERR "MODULE INSERT FAILED WITH %d\n", ret);

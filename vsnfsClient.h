@@ -55,4 +55,5 @@ extern const struct file_operations vsnfs_dir_operations;
 extern const struct dentry_operations vsnfs_dentry_operations;
 extern int vsnfs_permission(struct inode *, int);
 
+extern int vsnfs_do_lookup(struct inode *, struct qstr *, struct vsnfs_fh *);
 #endif

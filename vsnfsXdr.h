@@ -36,49 +36,53 @@ struct vsnfs_nullres {
  */
 
 struct vsnfs_readdirargs {
-	struct vsnfs_fh*	fh;
-	__u32				cookie;
-	unsigned int		count;
-	struct page**		pages;
+	struct vsnfs_fh *fh;
+	__u32 cookie;
+	unsigned int count;
+	struct page **pages;
 };
 
 struct vsnfs_entry {
-	__u64				ino;
-	__u64				cookie,
-					prev_cookie;
-	const char *		name;
-	unsigned int		len;
-	int					eof;
-	struct vsnfs_fh *	fh;
-};	
-
-struct vsnfs_getrootargs {
-  char *path;
-  unsigned int len;
+	__u64 ino;
+	__u64 cookie, prev_cookie;
+	const char *name;
+	unsigned int len;
+	int eof;
+	struct vsnfs_fh *fh;
 };
 
+struct vsnfs_getrootargs {
+	char *path;
+	unsigned int len;
+};
+
+struct vsnfs_lookupargs {
+	struct vsnfs_fh fh;
+	const char *filename;
+	unsigned int len;
+};
 
 struct vsnfs_rpc_ops {
-	int		version;		/*Protocol Version*/
+	int version;		/*Protocol Version */
 	const struct dentry_operations *dentry_ops;
 	const struct inode_operations *dir_inode_ops;
 	const struct inode_operations *file_inode_ops;
 
-	int		(*nullproc) (struct vsnfs_server *, int, int*);
-        int		(*getroot) (struct vsnfs_server *, struct vsnfs_getrootargs *, struct vsnfs_fh *);
-/*	int		(*lookup)  (struct inode *, struct qstr *, struct vsnfs_fh *);
-	int		(*create)  (struct inode *, struct dentry *, struct iattr *,
-						int, struct vsnfs_fh *);
-	int		(*remove)  (struct dentry *, struct qstr *);
-	int		(*mkdir)   (struct inode *, struct dentry *, struct iattr *);
-	int		(*rmdir)   (struct inode *, struct qstr *); */
-	int		(*readdir) (struct dentry *, u64, struct page *,
-						unsigned int, int);
+	int (*nullproc) (struct vsnfs_server *, int, int *);
+	int (*getroot) (struct vsnfs_server *, struct vsnfs_getrootargs *,
+			struct vsnfs_fh *);
+	int (*lookup) (struct vsnfs_server *, struct vsnfs_lookupargs *,
+		       struct vsnfs_fh *);
+	/*    int             (*create)  (struct inode *, struct dentry *, struct iattr *,
+	   int, struct vsnfs_fh *);
+	   int                (*remove)  (struct dentry *, struct qstr *);
+	   int                (*mkdir)   (struct inode *, struct dentry *, struct iattr *);
+	   int                (*rmdir)   (struct inode *, struct qstr *); */
+	int (*readdir) (struct dentry *, u64, struct page *, unsigned int, int);
 	__be32 *(*decode_dirent) (__be32 *, struct vsnfs_entry *, int plus);
 };
 
-int
-vsnfs_stat_to_errno(int stat);
+int vsnfs_stat_to_errno(int stat);
 
 extern int vsnfs_stat_to_errno(int);
 extern struct rpc_procinfo vsnfs_procedures[];
