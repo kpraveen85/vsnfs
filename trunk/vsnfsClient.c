@@ -77,7 +77,7 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 	}
 	printk(KERN_ERR "RPC client created\n");
 	server->cl_rpcclient = clnt;
-
+	/* TO DO: getting root handle should be moved outside of this function */
 	resp = kmalloc(sizeof(struct vsnfs_fh), GFP_KERNEL);
 	if (!resp) {
 		ret = -ENOMEM;

@@ -71,13 +71,37 @@
 #define	vsnfserr_cb_path_down	cpu_to_be32(VSNFSERR_CB_PATH_DOWN)
 #define	vsnfserr_locked		cpu_to_be32(VSNFSERR_LOCKED)
 #define	vsnfserr_wrongsec		cpu_to_be32(VSNFSERR_WRONGSEC)
-    struct vsnfs_lookup_table {
-	unsigned long ino;
-	 unsigned char *path;
-	 struct list_head list;
-};
-extern struct svc_version vsnfsd_version1;
-extern struct svc_program vsnfsd_program;
-int vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 * statp);
+    
+struct vsnfs_lookup_table {
+	
+unsigned long ino;
+	
+ unsigned char *path;
+	
+ struct list_head list;
 
-#endif	/*  */
+};
+
+
+extern struct svc_version vsnfsd_version1;
+
+extern struct svc_program vsnfsd_program;
+
+
+
+/* all nfs functions which interact with vfs go here */ 
+    __be32 vsnfsd_readdir(struct vsnfs_fh *fhp, void *buf);
+
+
+int vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 * statp);
+
+
+/* returns 0 on success -1 on failure */ 
+int vsnfsd_fh_to_path(struct vsnfs_fh *fh, char *path, int len);
+
+
+__be32 vsnfserrno(int errno);
+
+
+#endif	/* 
+ */

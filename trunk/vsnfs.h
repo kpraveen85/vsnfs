@@ -58,28 +58,78 @@
  */
 
 enum vsnfs_stat {
-	VSNFS_OK = 0,
-	VSNFSERR_NOENT = 2,
-	VSNFSERR_IO = 5,
-	VSNFSERR_NXIO = 6,
-	VSNFSERR_EAGAIN = 11,
-	VSNFSERR_EXIST = 17,
-	VSNFSERR_NODEV = 19,
-	VSNFSERR_NOTDIR = 20,
-	VSNFSERR_ISDIR = 21,
-	VSNFSERR_INVAL = 22,
-	VSNFSERR_FBIG = 27,
-	VSNFSERR_NOSPC = 28,
-	VSNFSERR_ROFS = 30,
-	VSNFSERR_MLINK = 31,
-	VSNFSERR_NAMETOOLONG = 63,
-	VSNFSERR_NOTEMPTY = 66,
-	VSNFSERR_DQUOT = 69,
-	VSNFSERR_STALE = 70,
-	VSNFSERR_REMOTE = 71,
-	VSNFSERR_BADHANDLE = 72,
-	VSNFSERR_OPNOTSUPP = 95,
-	VSNFSERR_BAD_COOKIE = 10003,
+	VSNFS_OK = 0,		/* v2 v3 v4 */
+	VSNFSERR_PERM = 1,	/* v2 v3 v4 */
+	VSNFSERR_NOENT = 2,	/* v2 v3 v4 */
+	VSNFSERR_IO = 5,	/* v2 v3 v4 */
+	VSNFSERR_NXIO = 6,	/* v2 v3 v4 */
+	VSNFSERR_EAGAIN = 11,	/* v2 v3 */
+	VSNFSERR_ACCES = 13,	/* v2 v3 v4 */
+	VSNFSERR_EXIST = 17,	/* v2 v3 v4 */
+	VSNFSERR_XDEV = 18,	/*    v3 v4 */
+	VSNFSERR_NODEV = 19,	/* v2 v3 v4 */
+	VSNFSERR_NOTDIR = 20,	/* v2 v3 v4 */
+	VSNFSERR_ISDIR = 21,	/* v2 v3 v4 */
+	VSNFSERR_INVAL = 22,	/* v2 v3 v4 */
+	VSNFSERR_FBIG = 27,	/* v2 v3 v4 */
+	VSNFSERR_NOSPC = 28,	/* v2 v3 v4 */
+	VSNFSERR_ROFS = 30,	/* v2 v3 v4 */
+	VSNFSERR_MLINK = 31,	/*    v3 v4 */
+	VSNFSERR_OPNOTSUPP = 45,	/* v2 v3 */
+	VSNFSERR_NAMETOOLONG = 63,	/* v2 v3 v4 */
+	VSNFSERR_NOTEMPTY = 66,	/* v2 v3 v4 */
+	VSNFSERR_DQUOT = 69,	/* v2 v3 v4 */
+	VSNFSERR_STALE = 70,	/* v2 v3 v4 */
+	VSNFSERR_REMOTE = 71,	/* v2 v3 */
+	VSNFSERR_WFLUSH = 99,	/* v2    */
+	VSNFSERR_BADHANDLE = 10001,	/*    v3 v4 */
+	VSNFSERR_NOT_SYNC = 10002,	/*    v3 */
+	VSNFSERR_BAD_COOKIE = 10003,	/*    v3 v4 */
+	VSNFSERR_NOTSUPP = 10004,	/*    v3 v4 */
+	VSNFSERR_TOOSMALL = 10005,	/*    v3 v4 */
+	VSNFSERR_SERVERFAULT = 10006,	/*    v3 v4 */
+	VSNFSERR_BADTYPE = 10007,	/*    v3 v4 */
+	VSNFSERR_JUKEBOX = 10008,	/*    v3 v4 */
+	VSNFSERR_SAME = 10009,	/*       v4 */
+	VSNFSERR_DENIED = 10010,	/*       v4 */
+	VSNFSERR_EXPIRED = 10011,	/*       v4 */
+	VSNFSERR_LOCKED = 10012,	/*       v4 */
+	VSNFSERR_GRACE = 10013,	/*       v4 */
+	VSNFSERR_FHEXPIRED = 10014,	/*       v4 */
+	VSNFSERR_SHARE_DENIED = 10015,	/*       v4 */
+	VSNFSERR_WRONGSEC = 10016,	/*       v4 */
+	VSNFSERR_CLID_INUSE = 10017,	/*       v4 */
+	VSNFSERR_RESOURCE = 10018,	/*       v4 */
+	VSNFSERR_MOVED = 10019,	/*       v4 */
+	VSNFSERR_NOFILEHANDLE = 10020,	/*       v4 */
+	VSNFSERR_MINOR_VERS_MISMATCH = 10021,	/* v4 */
+	VSNFSERR_STALE_CLIENTID = 10022,	/*       v4 */
+	VSNFSERR_STALE_STATEID = 10023,	/*       v4 */
+	VSNFSERR_OLD_STATEID = 10024,	/*       v4 */
+	VSNFSERR_BAD_STATEID = 10025,	/*       v4 */
+	VSNFSERR_BAD_SEQID = 10026,	/*       v4 */
+	VSNFSERR_NOT_SAME = 10027,	/*       v4 */
+	VSNFSERR_LOCK_RANGE = 10028,	/*       v4 */
+	VSNFSERR_SYMLINK = 10029,	/*       v4 */
+	VSNFSERR_RESTOREFH = 10030,	/*       v4 */
+	VSNFSERR_LEASE_MOVED = 10031,	/*       v4 */
+	VSNFSERR_ATTRNOTSUPP = 10032,	/*       v4 */
+	VSNFSERR_NO_GRACE = 10033,	/*       v4 */
+	VSNFSERR_RECLAIM_BAD = 10034,	/*       v4 */
+	VSNFSERR_RECLAIM_CONFLICT = 10035,	/*       v4 */
+	VSNFSERR_BAD_XDR = 10036,	/*       v4 */
+	VSNFSERR_LOCKS_HELD = 10037,	/*       v4 */
+	VSNFSERR_OPENMODE = 10038,	/*       v4 */
+	VSNFSERR_BADOWNER = 10039,	/*       v4 */
+	VSNFSERR_BADCHAR = 10040,	/*       v4 */
+	VSNFSERR_BADNAME = 10041,	/*       v4 */
+	VSNFSERR_BAD_RANGE = 10042,	/*       v4 */
+	VSNFSERR_LOCK_NOTSUPP = 10043,	/*       v4 */
+	VSNFSERR_OP_ILLEGAL = 10044,	/*       v4 */
+	VSNFSERR_DEADLOCK = 10045,	/*       v4 */
+	VSNFSERR_FILE_OPEN = 10046,	/*       v4 */
+	VSNFSERR_ADMIN_REVOKED = 10047,	/*       v4 */
+	VSNFSERR_CB_PATH_DOWN = 10048,	/*       v4 */
 };
 
 /*enum vsnfs_ftype {
@@ -88,9 +138,10 @@ enum vsnfs_stat {
 	VSNFSDIR  = 2
 };*/
 
+/* TO DO cleanup of the structure required */
 struct vsnfs_fh {
-	short int type;
 	unsigned char data[VSNFS_FHSIZE];
+	int type;
 };
 
 /*struct svc_fh {

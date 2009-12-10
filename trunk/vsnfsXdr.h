@@ -32,12 +32,11 @@ struct vsnfs_nullres {
 };
 
 /*
- * Arguements to readdir call (JUST A SAMPLE)
+ * Arguements to readdir call
  */
 
 struct vsnfs_readdirargs {
 	struct vsnfs_fh *fh;
-	__u32 cookie;
 	unsigned int count;
 	struct page **pages;
 };
