@@ -11,6 +11,9 @@
  */
 #include <linux/dcache.h>
 #include <linux/namei.h>
+#include <linux/pagemap.h>
+#include <linux/page-flags.h>
+#include <linux/gfp.h>
 #include "vsnfs.h"
 #include "vsnfsClient.h"
 #include "vsnfsXdr.h"
@@ -46,6 +49,42 @@ const struct dentry_operations vsnfs_dentry_operations = {
 	.d_delete = vsnfs_dentry_delete,
 	.d_iput = vsnfs_dentry_iput,
 };
+typedef __be32 * (*decode_dirent_t)(__be32 *, struct vsnfs_entry *);
+typedef struct {
+    struct file*        file;
+    struct page*        page;
+    unsigned long       page_index;
+    u32*                ptr;
+    u64                 target;
+    struct vsnfs_entry* entry;
+    decode_dirent_t     decode;
+    int                 error;
+}vsnfs_readdir_descriptor_t;
+/*
+static int
+vsnfs_readdir_filler(vsnfs_readdir_descriptor_t *desc, struct page *page)
+{
+    struct file     *file = desc->file;
+    struct inode    *inode = file->f_dentry->d_inode;
+    int error;
+
+    error = VSNFS_PROTO(inode)->readdir(file->f_dentry, page, PAGE_CACHE_SIZE);
+    if (error < 0)
+        goto error;
+
+    SetPageUptodate(page);
+
+    if (page->index == 0)
+        invalidate_inode_pages(inode->i_mapping);
+    unlock_page(page);
+    return 0;
+error:
+    SetPageError(page);
+    unlock_page(page);
+    invalidate_inode_pages(inode->i_mapping);
+    desc->error = error;
+    return -EIO;
+}*/
 
 static int vsnfs_opendir(struct inode *inode, struct file *filp)
 {
@@ -53,10 +92,128 @@ static int vsnfs_opendir(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static int vsnfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+static inline
+int dir_decode(vsnfs_readdir_descriptor_t *desc)
 {
-	vsnfs_trace(KERN_INFO, "In ReadDir\n");
-	return 0;
+    __be32 *p = desc->ptr;
+
+    p = desc->decode(p, desc->entry);
+    if(IS_ERR(p))
+        return PTR_ERR(p);
+
+    desc->ptr = p;
+    return 0;
+}
+
+static inline
+void dir_page_release(vsnfs_readdir_descriptor_t *desc)
+{
+    kunmap(desc->page);
+    page_cache_release(desc->page);
+    desc->page = NULL;
+    desc->ptr = NULL;
+}
+
+static
+int vsnfs_do_filldir(vsnfs_readdir_descriptor_t *desc, void *dirent,
+           filldir_t filldir)
+{
+    struct vsnfs_entry *entry = desc->entry;
+    unsigned long fileid;
+    unsigned int d_type;
+    int res;
+
+    for(;;) {
+        fileid = entry->ino;
+        if (entry->fh->type == VSNFS_REG)
+            d_type = 8;
+        else if (entry->fh->type == VSNFS_DIR)
+            d_type = 4;
+        else
+            d_type = DT_UNKNOWN;
+        res = filldir(dirent, entry->name, entry->len, entry->offset, fileid, d_type);
+
+        if (res < 0)
+            break;
+        entry->offset++;
+        /* Need to add code here if we use cookie */
+    }
+    dir_page_release(desc);
+
+    return res;
+}
+
+static inline
+int simple_readdir(vsnfs_readdir_descriptor_t *desc, void *dirent,
+                    filldir_t filldir)
+{
+    struct file *file = desc->file;
+    struct inode *inode = file->f_path.dentry->d_inode;
+    struct page *page = NULL;
+    int status;
+
+    page = alloc_page(GFP_HIGHUSER);
+    if (!page) {
+        status = -ENOMEM;
+        goto out;
+    }
+
+    status = VSNFS_PROTO(inode)->readdir(file->f_path.dentry, page, PAGE_CACHE_SIZE);
+
+    if (status < 0)
+        goto out;
+
+    desc->page = page;
+    desc->ptr = kmap(page);
+
+    status = vsnfs_do_filldir(desc, dirent, filldir);
+
+    desc->page_index = 0;
+    desc->entry->offset = 0;
+    desc->entry->eof = 1; /* Hardcoded since we just support one page read */
+
+out:
+    return status;
+
+}
+
+static int
+vsnfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+{
+    struct dentry   *dentry = filp->f_dentry;
+    struct inode    *inode = dentry->d_inode;
+    vsnfs_readdir_descriptor_t my_desc, *desc = &my_desc;
+    struct vsnfs_entry my_entry;
+    struct vsnfs_fh fh;
+    long res;
+
+    memset(desc, 0, sizeof(*desc));
+
+    desc->file = filp;
+    desc->target = filp->f_pos;
+    desc->decode = VSNFS_PROTO(inode)->decode_dirent;
+
+    my_entry.eof = 0;
+    my_entry.fh = &fh;
+    desc->entry = &my_entry;
+
+    while(!desc->entry->eof) {
+        res = simple_readdir(desc, dirent, filldir);
+        if (res == -EBADCOOKIE) {
+            if (res >= 0)
+                continue;
+        }
+
+        if (res < 0)
+            break;
+    }
+
+    if (res > 0)
+        res = 0;
+    vsnfs_trace(KERN_INFO, "VSNFS: readdir(%s/%s) returns %ld\n",
+            dentry->d_parent->d_name.name, dentry->d_name.name,
+            res);
+    return res;
 }
 
 static int

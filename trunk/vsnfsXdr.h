@@ -44,7 +44,7 @@ struct vsnfs_readdirargs {
 
 struct vsnfs_entry {
 	__u64 ino;
-	__u64 cookie, prev_cookie;
+	__u64 offset;
 	const char *name;
 	unsigned int len;
 	int eof;
@@ -78,15 +78,15 @@ struct vsnfs_rpc_ops {
 	   int                (*remove)  (struct dentry *, struct qstr *);
 	   int                (*mkdir)   (struct inode *, struct dentry *, struct iattr *);
 	   int                (*rmdir)   (struct inode *, struct qstr *); */
-	int (*readdir) (struct dentry *, u64, struct page *, unsigned int, int);
-	__be32 *(*decode_dirent) (__be32 *, struct vsnfs_entry *, int plus);
+	int (*readdir) (struct dentry *, struct page *, unsigned int);
+	__be32 *(*decode_dirent) (__be32 *, struct vsnfs_entry *);
 };
 
 int vsnfs_stat_to_errno(int stat);
 
 extern int vsnfs_stat_to_errno(int);
 extern struct rpc_procinfo vsnfs_procedures[];
-extern __be32 *vsnfs_decode_dirent(__be32 *, struct vsnfs_entry *, int);
+extern __be32 *vsnfs_decode_dirent(__be32 *, struct vsnfs_entry *);
 
 extern const struct vsnfs_rpc_ops vsnfs_clientops;
 extern struct rpc_version vsnfs_version1;
