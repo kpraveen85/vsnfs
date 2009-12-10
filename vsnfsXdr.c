@@ -23,14 +23,14 @@
 #define VSNFS_info_sz			5
 #define VSNFS_entry_sz			(VSNFS_filename_sz+3)
 
-#define VSNFS_nullargs_sz		(1)
+#define VSNFS_nullargs_sz		(1)	/*check this part */
 #define VSNFS_getrootargs_sz            (VSNFS_path_sz)
 #define VSNFS_lookupargs_sz             (VSNFS_fhandle_sz+VSNFS_path_sz)
 #define	VSNFS_readdirargs_sz	        (VSNFS_fhandle_sz+2)
-
-#define VSNFS_fh_sz                     (VSNFS_fhandle_sz)
+/* 1 for status and 1 for type */
+#define VSNFS_fh_sz             (1+VSNFS_fhandle_sz+1)
 #define VSNFS_nullres_sz		(1)
-#define VSNFS_readdirres_sz		(VSNFS_fhandle_sz)
+#define VSNFS_readdirres_sz		(1)	/*status */
 
 /*
  * Common VSNFS XDR functions as inlines
@@ -116,12 +116,17 @@ vsnfs_xdr_readdirargs(struct rpc_rqst *req, __be32 * p,
 	unsigned int replen;
 	u32 count = args->count;
 
+	vsnfs_trace(KERN_DEFAULT, "\n");
+
 	p = xdr_encode_fhandle(p, args->fh);
-	*p++ = htonl(args->cookie);
-	*p++ = htonl(count);	/* see above */
+	*p++ = htonl(count);
 	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
 
-	/* Inline the page array */
+	/* Inline the page array
+	   earlier it xdr_buff is just represented by 'head' vec
+	   after this call, it's split into head & tail and pages 
+	   (which are logically between head and tail) are added to the buff */
+	/* check auth->au_rslack field */
 	replen = (RPC_REPHDRSIZE + auth->au_rslack + VSNFS_readdirres_sz) << 2;
 	xdr_inline_pages(&req->rq_rcv_buf, replen, args->pages, 0, count);
 	return 0;
@@ -179,6 +184,10 @@ static int vsnfs_xdr_fh(struct rpc_rqst *req, __be32 * p, struct vsnfs_fh *fh)
  */
 static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
 {
+	/* TBD */
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	return 0;
+#if 0
 	struct xdr_buf *rcvbuf = &req->rq_rcv_buf;
 	struct kvec *iov = rcvbuf->head;
 	struct page **page;
@@ -260,6 +269,7 @@ static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
       err_unmap:
 	nr = -errno_VSNFSERR_IO;
 	goto out;
+#endif
 }
 
 __be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry)
