@@ -86,14 +86,13 @@ vsnfs_proc_lookup(struct vsnfs_server *server, struct vsnfs_lookupargs *args,
 }
 
 static int
-vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
-		   unsigned int count, int plus)
+vsnfs_proc_readdir(struct dentry *dentry, struct page *page,
+		   unsigned int count)
 {
 	int status;
 	struct inode *dir = dentry->d_inode;
 	struct vsnfs_readdirargs arg = {
 		.fh = VSNFS_FH(dir),
-		.cookie = cookie,
 		.count = count,
 		.pages = &page,
 	};
@@ -103,10 +102,9 @@ vsnfs_proc_readdir(struct dentry *dentry, u64 cookie, struct page *page,
 		.rpc_cred = NULL,
 	};
 
-	printk("VSNFS call readdir %d\n", (unsigned int)cookie);
 	status = rpc_call_sync(VSNFS_CLIENT(dir), &msg, 0);
 
-	printk("NFS reply readdir: %d\n", status);
+	printk("VSNFS reply readdir: %d\n", status);
 	return status;
 }
 

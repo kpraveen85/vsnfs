@@ -262,7 +262,7 @@ static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
 	goto out;
 }
 
-__be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry, int plus)
+__be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry)
 {
 	if (!*p++) {
 		if (!*p)
@@ -275,8 +275,8 @@ __be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry, int plus)
 	entry->len = ntohl(*p++);
 	entry->name = (const char *)p;
 	p += XDR_QUADLEN(entry->len);
-	entry->prev_cookie = entry->cookie;
-	entry->cookie = ntohl(*p++);
+//	entry->prev_cookie = entry->cookie;
+//	entry->cookie = ntohl(*p++);
 	entry->eof = !p[0] && p[1];
 
 	return p;
