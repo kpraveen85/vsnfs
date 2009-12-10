@@ -49,7 +49,15 @@ const struct dentry_operations vsnfs_dentry_operations = {
 	.d_delete = vsnfs_dentry_delete,
 	.d_iput = vsnfs_dentry_iput,
 };
+
 typedef __be32 * (*decode_dirent_t)(__be32 *, struct vsnfs_entry *);
+
+/* vsnfs_readdir_descriptor_t :- This structure is used to describe the pages 
+ * containing dirents returned by the server. Though we have fields like page_index 
+ * we just support reading a single page full of dirents as of now. In other words, 
+ * when you do a "ls" you will see files whose dirents were present in that single 
+ * page returned by the server. The unused fields are for extensibility.
+ */
 typedef struct {
     struct file*        file;
     struct page*        page;
@@ -60,31 +68,6 @@ typedef struct {
     decode_dirent_t     decode;
     int                 error;
 }vsnfs_readdir_descriptor_t;
-/*
-static int
-vsnfs_readdir_filler(vsnfs_readdir_descriptor_t *desc, struct page *page)
-{
-    struct file     *file = desc->file;
-    struct inode    *inode = file->f_dentry->d_inode;
-    int error;
-
-    error = VSNFS_PROTO(inode)->readdir(file->f_dentry, page, PAGE_CACHE_SIZE);
-    if (error < 0)
-        goto error;
-
-    SetPageUptodate(page);
-
-    if (page->index == 0)
-        invalidate_inode_pages(inode->i_mapping);
-    unlock_page(page);
-    return 0;
-error:
-    SetPageError(page);
-    unlock_page(page);
-    invalidate_inode_pages(inode->i_mapping);
-    desc->error = error;
-    return -EIO;
-}*/
 
 static int vsnfs_opendir(struct inode *inode, struct file *filp)
 {
@@ -105,6 +88,7 @@ int dir_decode(vsnfs_readdir_descriptor_t *desc)
     return 0;
 }
 
+/* Helper to release the page in the descriptor once read */
 static inline
 void dir_page_release(vsnfs_readdir_descriptor_t *desc)
 {
@@ -114,6 +98,9 @@ void dir_page_release(vsnfs_readdir_descriptor_t *desc)
     desc->ptr = NULL;
 }
 
+/* vsnfs_do_filldir :- Main routine that reads the dirents from the page returned
+ * by server and fills them in the client.
+ */
 static
 int vsnfs_do_filldir(vsnfs_readdir_descriptor_t *desc, void *dirent,
            filldir_t filldir)
@@ -143,6 +130,10 @@ int vsnfs_do_filldir(vsnfs_readdir_descriptor_t *desc, void *dirent,
     return res;
 }
 
+/* simple_readdir :- We don't maintain any entry in the page cache for
+ * dirents. So whenever readdir is called we issue a request to server and
+ * it returns a single page full of dirents.
+ */
 static inline
 int simple_readdir(vsnfs_readdir_descriptor_t *desc, void *dirent,
                     filldir_t filldir)
@@ -177,6 +168,7 @@ out:
 
 }
 
+/* -->reaaddir() procedure for VSNFS */
 static int
 vsnfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 {
@@ -221,7 +213,7 @@ vsnfs_create(struct inode *dir, struct dentry *dentry, int mode,
 	     struct nameidata *nd)
 {
 	vsnfs_trace(KERN_INFO, "In Create\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static struct dentry *vsnfs_lookup(struct inode *dir, struct dentry *dentry,
@@ -271,15 +263,18 @@ static struct dentry *vsnfs_lookup(struct inode *dir, struct dentry *dentry,
 static int vsnfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 {
 	vsnfs_trace(KERN_INFO, "In Mkdir\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static int vsnfs_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	vsnfs_trace(KERN_INFO, "In Rmdir\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
+/* -->permission procedure for VSNFS. We dont have permission
+ * checks as of now. So we always return 0.
+ */
 int vsnfs_permission(struct inode *inode, int mask)
 {
 	vsnfs_trace(KERN_INFO, "In permissions\n");
@@ -289,13 +284,13 @@ int vsnfs_permission(struct inode *inode, int mask)
 static int vsnfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
 	vsnfs_trace(KERN_INFO, "In Lookup_Revalidate\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static int vsnfs_dentry_delete(struct dentry *dentry)
 {
 	vsnfs_trace(KERN_INFO, "In dentry delete\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static void vsnfs_dentry_iput(struct dentry *dentry, struct inode *inode)

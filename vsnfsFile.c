@@ -35,7 +35,7 @@ const struct inode_operations vsnfs_file_inode_operations = {
 static int vsnfs_file_open(struct inode *inode, struct file *filp)
 {
 	vsnfs_trace(KERN_INFO, "Inside file open\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static ssize_t
@@ -43,7 +43,7 @@ vsnfs_file_read(struct kiocb *iocb, const struct iovec *iov,
 		unsigned long nr_segs, loff_t pos)
 {
 	vsnfs_trace(KERN_INFO, "Inside file read\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
 
 static int
@@ -51,5 +51,5 @@ vsnfs_file_write(struct kiocb *iocb, const struct iovec *iov,
 		 unsigned long nr_segs, loff_t pos)
 {
 	vsnfs_trace(KERN_INFO, "Inside file write\n");
-	return 0;
+	return -EOPNOTSUPP;
 }
