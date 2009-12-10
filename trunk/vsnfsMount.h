@@ -15,6 +15,6 @@
 
 extern int
 vsnfs_parse_mount_options(char *options, const char *dev_name,
-							struct vsnfs_server *server);
+			  struct vsnfs_server *server);
 
 #endif
