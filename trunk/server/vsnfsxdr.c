@@ -94,6 +94,37 @@ vsnfssvc_decode_readdirargs(struct svc_rqst *rqstp, __be32 * p,
 
 
 /*
+* 0 on failure 
+* 1 on success
+*/ 
+int vsnfssvc_decode_readargs(struct svc_rqst *rqstp, __be32 *p,
+					struct vsnfsd_readargs *args)
+{
+	unsigned int len;
+	
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	if (!(p = decode_fh(p, &args->fh)))
+		return 0;
+
+	args->offset	= ntohl(*p++);
+	len = ntohl(*p++);
+	//p++; /* totalcount - unused */
+
+	if (len > PAGE_SIZE)
+		len = PAGE_SIZE;
+
+	args->count = len;
+
+	/* set up somewhere to store response.
+	 * We take pages, put them on reslist and include in iovec
+	 */
+	args->buffer = page_address(rqstp->rq_respages[rqstp->rq_resused++]);
+	return xdr_argsize_check(rqstp, p);
+}
+
+
+
+/*
  * XDR encode functions
  * 0 on error
  * 1 on success
@@ -193,6 +224,20 @@ vsnfssvc_encode_entry(void *buf, const char *name, int namlen, loff_t offset,
 	res->buffer = p;
 	//res->err = vsnfs_ok;
 	return 0;
+}
+
+/*
+* 0 on failure 
+* 1 on success
+*/ 
+int vsnfssvc_encode_readres(struct svc_rqst *rqstp, __be32 *p,
+					struct vsnfsd_readres *res)
+{
+	vsnfs_trace(KERN_DEBUG, "\n");
+	*p++ = htonl(res->count);
+	rqstp->rq_res.page_len = (((unsigned long)p - 1) & ~PAGE_MASK) + 1;
+
+	return xdr_ressize_check(rqstp, p);
 }
 
 

@@ -84,6 +84,9 @@ extern struct svc_program vsnfsd_program;
 /* all nfs functions which interact with vfs go here */ 
 __be32 vsnfsd_readdir(struct vsnfs_fh *fhp, void *buf);
 int vsnfsd_dispatch(struct svc_rqst *rqstp, __be32 * statp);
+__be32 vsnfsd_read(struct vsnfs_fh *fhp, char *buff, size_t count, loff_t *pos);
+;
+
 
 /* returns 0 on success -1 on failure */ 
 int vsnfsd_fh_to_path(struct vsnfs_fh *fh, char *path, int len);

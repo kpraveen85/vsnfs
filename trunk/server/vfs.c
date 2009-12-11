@@ -3,6 +3,8 @@
 #include <linux/types.h>
 #include <linux/sunrpc/svc.h>
 #include <linux/list.h>
+#include <asm/uaccess.h>
+
 #include "../vsnfs.h"
 #include "vsnfsd.h"
 #include "xdr.h"
@@ -94,6 +96,41 @@ __be32  vsnfsd_readdir(struct vsnfs_fh * fhp, void *buf)
 	}
 out_close:
 	vsnfsd_close(file);
+out:
+	return err;
+}
+
+
+__be32
+vsnfsd_read(struct vsnfs_fh *fhp, char *buffer, size_t count, loff_t *pos)
+{
+	__be32		err = vsnfs_ok;
+	struct file *filp;	
+	mm_segment_t	oldfs;
+	int host_err;
+
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	err = vsnfsd_open(fhp, &filp, O_RDONLY);
+	if(err != vsnfs_ok)
+		goto out;
+
+	oldfs = get_fs();
+	set_fs(KERNEL_DS);
+	host_err = vfs_read(filp, buffer, count, pos);
+	set_fs(oldfs);
+
+	if(host_err >= 0)
+		{		
+		*pos = (loff_t)host_err;
+		}
+	else
+		{
+		err = vsnfserrno(host_err);		
+		}
+
+	vsnfs_trace(KERN_DEFAULT, "%d %c %c %c\n",(int)*pos, buffer[0],buffer[1],buffer[2]); 
+
+	vsnfsd_close(filp);	
 out:
 	return err;
 }

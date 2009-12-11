@@ -278,14 +278,14 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	} else
 		vsnfs_trace(KERN_INFO, "Inode Found\n");
 
-	vsnfs_trace("VSNFS: nfs_fhget(%s/%Ld ct=%d)\n",
+	vsnfs_trace(KERN_DEFAULT, "VSNFS: nfs_fhget(%s/%Ld ct=%d)\n",
 	       inode->i_sb->s_id,
 	       (long long)VSNFS_FILEID(inode), atomic_read(&inode->i_count));
       out:
 	return inode;
 
       out_no_inode:
-	vsnfs_trace("vsnfs_fhget: iget failed\n");
+	vsnfs_trace(KERN_DEFAULT, "vsnfs_fhget: iget failed\n");
 	goto out;
 }
 
