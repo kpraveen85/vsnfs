@@ -28,10 +28,14 @@
 #define VSNFS_lookupargs_sz             (VSNFS_fhandle_sz+VSNFS_path_sz)
 /*1 for type and 1 for count*/
 #define	VSNFS_readdirargs_sz	        (VSNFS_fhandle_sz+2)
+#define	VSNFS_readargs_sz	        (VSNFS_fhandle_sz+3) /*type, offset and len*/
+
 /* 1 for status and 1 for type */
 #define VSNFS_fh_sz             (1+VSNFS_fhandle_sz+1)
 #define VSNFS_nullres_sz		(1)
 #define VSNFS_readdirres_sz		(1)	/*status */
+#define VSNFS_readres_sz		(1+1)	/*status and count*/
+
 
 /*
  * Common VSNFS XDR functions as inlines
@@ -134,6 +138,37 @@ vsnfs_xdr_readdirargs(struct rpc_rqst *req, __be32 * p,
 }
 
 /*
+ * Encode arguments to read call
+ */
+static int
+vsnfs_xdr_readargs(struct rpc_rqst *req, __be32 * p,
+		      struct vsnfs_readargs *args)
+{
+	struct rpc_task *task = req->rq_task;
+	struct rpc_auth *auth = task->tk_msg.rpc_cred->cr_auth;
+	unsigned int replen;
+	u32 count = args->length;
+
+	vsnfs_trace(KERN_DEFAULT, "\n");
+
+	p = xdr_encode_fhandle(p, args->fh);
+	*p++ = htonl(args->offset);
+	*p++ = htonl(args->length);
+	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
+
+	/* Inline the page array
+	   earlier it xdr_buff is just represented by 'head' vec
+	   after this call, it's split into head & tail and pages 
+	   (which are logically between head and tail) are added to the buff */
+	/* check auth->au_rslack field */
+	replen = (RPC_REPHDRSIZE + auth->au_rslack + VSNFS_readdirres_sz) << 2;
+	xdr_inline_pages(&req->rq_rcv_buf, replen, args->pages, 0, count);
+	return 0;
+}
+
+
+
+/*
  * VSNFS decode functions
  */
 
@@ -191,105 +226,26 @@ static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
 
 	if ((status = ntohl(*p++)))
 		return vsnfs_stat_to_errno(status);
-	/* TBD remove it - test code */	
-#if 0
-{	
-	struct vsnfs_entry entry;
-	__be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry);
-
-	do {
-		p = vsnfs_decode_dirent(p, &entry);
-		} while(!entry.eof);
-	return 1;
-}
-#endif
 	
 	return 0;
-	/* TBD check the below code */
-#if 0
-	struct xdr_buf *rcvbuf = &req->rq_rcv_buf;
-	struct kvec *iov = rcvbuf->head;
-	struct page **page;
-	size_t hdrlen;
-	unsigned int pglen, recvd;
-	u32 len;
-	int status, nr = 0;
-	__be32 *end, *entry, *kaddr;
+}
+
+static int vsnfs_xdr_readres(struct rpc_rqst *req, __be32 * p,
+		   struct vsnfs_readres *res)
+{
+	int status;
+	vsnfs_trace(KERN_DEBUG, "\n");
 
 	if ((status = ntohl(*p++)))
 		return vsnfs_stat_to_errno(status);
 
-	hdrlen = (u8 *) p - (u8 *) iov->iov_base;
-	if (iov->iov_len < hdrlen) {
-		printk("VSNFS: READDIR reply header overflowed:"
-		       "length %Zu > %Zu\n", hdrlen, iov->iov_len);
-		return -errno_VSNFSERR_IO;
-	} else if (iov->iov_len != hdrlen) {
-		printk
-		    ("VSNFS: READDIR header is short. iovec will be shifted.\n");
-		xdr_shift_buf(rcvbuf, iov->iov_len - hdrlen);
-	}
+	*p++ = htonl(res->count);
+	req->rq_slen = xdr_adjust_iovec(req->rq_svec, p);
 
-	pglen = rcvbuf->page_len;
-	recvd = rcvbuf->len - hdrlen;
-	if (pglen > recvd)
-		pglen = recvd;
-	page = rcvbuf->pages;
-	kaddr = p = kmap_atomic(*page, KM_USER0);
-	end = (__be32 *) ((char *)p + pglen);
-	entry = p;
-
-	/* Make sure the packet actually has a value_follows and EOF entry */
-	if ((entry + 1) > end)
-		goto short_pkt;
-
-	for (; *p++; nr++) {
-		if (p + 2 > end)
-			goto short_pkt;
-		p++;		/* fileid */
-		len = ntohl(*p++);
-		p += XDR_QUADLEN(len) + 1;	/* name plus cookie */
-		if (len > VSNFS_MAXNAMLEN) {
-			printk("VSNFS: giant filename in readdir (len 0x%x)!\n",
-			       len);
-			goto err_unmap;
-		}
-		if (p + 2 > end)
-			goto short_pkt;
-		entry = p;
-	}
-
-	/*
-	 * Apparently some server sends responses that are a valid size, but
-	 * contain no entries, and have value_follows==0 and EOF==0. For
-	 * those, just set the EOF marker.
-	 */
-	if (!nr && entry[1] == 0) {
-		printk("VSNFS: readdir reply truncated!\n");
-		entry[1] = 1;
-	}
-      out:
-	kunmap_atomic(kaddr, KM_USER0);
-	return nr;
-      short_pkt:
-	/*
-	 * When we get a short packet there are 2 possibilities. We can
-	 * return an error, or fix up the response to look like a valid
-	 * response and return what we have so far. If there are no
-	 * entries and the packet was short, then return -EIO. If there
-	 * are valid entries in the response, return them and pretend that
-	 * the call was successful, but incomplete. The caller can retry the
-	 * readdir starting at the last cookie.
-	 */
-	entry[0] = entry[1] = 0;
-	if (!nr)
-		nr = -errno_VSNFSERR_IO;
-	goto out;
-      err_unmap:
-	nr = -errno_VSNFSERR_IO;
-	goto out;
-#endif
+	vsnfs_trace(KERN_DEBUG, "%d %d\n", status, (int)res->count);	
+	return 0;
 }
+
 
 __be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry)
 {
@@ -379,7 +335,7 @@ struct rpc_procinfo vsnfs_procedures[] = {
 	PROC(NULL, nullargs, nullres),
 	PROC(GETROOT, getrootargs, fh),
 	PROC(LOOKUP, lookupargs, fh),
-//      PROC(READ,          readargs,       readres),
+    PROC(READ,          readargs,       readres),
 //      PROC(WRITE,                     writeargs,              writeres),
 //      PROC(CREATE,        createargs,     diropres),
 //      PROC(REMOVE,        diropargs,      stat),

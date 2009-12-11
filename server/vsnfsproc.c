@@ -265,6 +265,29 @@ vsnfsd_proc_readdir(struct svc_rqst *rqstp, struct vsnfsd_readdirargs *argp,
 }
 
 
+static __be32
+vsnfsd_proc_read(struct svc_rqst *rqstp, struct vsnfsd_readargs *argp,
+				       struct vsnfsd_readres  *resp)
+{
+	__be32	vsnfserr = vsnfs_ok;
+	loff_t pos;
+	
+	vsnfs_trace(KERN_DEFAULT, "\n");
+
+	/* 1 word for status and 1 word for the byte count.
+	 */
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	svc_reserve_auth(rqstp, 2 + argp->count);
+
+	vsnfserr = vsnfsd_read(&(argp->fh), (char*)(argp->buffer), (size_t)(argp->count), &pos);
+	resp->count = (unsigned long)pos;
+	vsnfs_trace(KERN_DEFAULT, "%d\n", (int)resp->count);
+
+	return vsnfserr;	
+}
+
+
+
 /*
  * VSNFS Server procedures.
  * No caching of results for any function
@@ -308,9 +331,19 @@ static struct svc_procedure vsnfsd_procedures1[VSNFS_NRPROCS] = {
 			.pc_ressize = sizeof(struct vsnfsd_readdirres),
 			.pc_cachetype = RC_NOCACHE,
 			.pc_xdrressize = ST,
-			/* check this */
-								
+			/* check this */								
 			}, 
+		[VSNFSPROC_READ] = {
+			.pc_func = (svc_procfunc) vsnfsd_proc_read,
+			.pc_decode = (kxdrproc_t) vsnfssvc_decode_readargs,
+			.pc_encode = (kxdrproc_t) vsnfssvc_encode_readres,
+			//.pc_release = (kxdrproc_t) nfssvc_release_fhandle, /* <TO DO> */
+			.pc_argsize = sizeof(struct vsnfsd_readargs),
+			.pc_ressize = sizeof(struct vsnfsd_readres),
+			.pc_cachetype = RC_NOCACHE,
+			.pc_xdrressize = ST+VSNFSSVC_MAXBLKSIZE/4, /* <TO DO> check this */
+		},					
+			
 	    /*add procs here */ 
 };
 

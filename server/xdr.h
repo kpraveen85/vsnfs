@@ -13,9 +13,7 @@ struct vsnfsd_readdirargs {
 	__u32 count;
 	__be32 * buffer;
 };
-struct readdir_cd {
-	__be32 err;		/* 0, nfserr, or nfserr_eof */
-};
+
 
 /*add any field through which you want to communicate 
 between vfs_readdir and vsnfsd_filldir*/ 
@@ -26,6 +24,20 @@ between vfs_readdir and vsnfsd_filldir*/
 	 int buflen;		/* space remaining in the buffer */
 	 __be32 * offset;	/* stores offset of the dir entry location in the file */
 };
+
+struct vsnfsd_readargs {
+	struct vsnfs_fh		fh;
+	__u32			offset;
+	__u32			count;
+	__be32 * buffer;   /* keeps track of next location to be written */
+	//int			vlen; /* <TO DO> */
+};
+
+struct vsnfsd_readres {
+	unsigned long		count; /* <TO DO>*/
+};
+
+
 struct vsnfsd_getrootargs  {
 	char *path;
 	 unsigned int len;
@@ -44,6 +56,10 @@ int  vsnfssvc_decode_readdirargs(struct svc_rqst *rqstp, __be32 * p,
 				    struct vsnfsd_readdirargs *args);
 int  vsnfssvc_encode_readdirres(struct svc_rqst *rqstp, __be32 * p,
 				   struct vsnfsd_readdirres *resp);
+int vsnfssvc_decode_readargs(struct svc_rqst *rqstp, __be32 *p,
+					struct vsnfsd_readargs *args);
+int vsnfssvc_encode_readres(struct svc_rqst *rqstp, __be32 *p,
+					struct vsnfsd_readres *res);
 int vsnfssvc_decode_getrootargs(struct svc_rqst *, __be32 *,
 				  struct vsnfsd_getrootargs *);
 int vsnfssvc_encode_fhandle(struct svc_rqst *, __be32 *, struct vsnfs_fh *);

@@ -41,6 +41,19 @@ struct vsnfs_readdirargs {
 	struct page **pages;
 };
 
+struct vsnfs_readargs {
+	struct vsnfs_fh *fh;
+	unsigned int offset;
+	unsigned int length;
+	struct page **pages;
+};
+
+/* Response from NULL proc*/
+struct vsnfs_readres {
+	unsigned long count;
+};
+
+
 struct vsnfs_entry {
 	__u64 ino;
 	__u64 offset;
@@ -78,6 +91,8 @@ struct vsnfs_rpc_ops {
 	   int                (*mkdir)   (struct inode *, struct dentry *, struct iattr *);
 	   int                (*rmdir)   (struct inode *, struct qstr *); */
 	int (*readdir) (struct dentry *, struct page *, unsigned int);
+	int (*read)	(struct dentry *dentry, struct page *page,
+				   loff_t *offset, unsigned int count, int *pos);	
 	__be32 *(*decode_dirent) (__be32 *, struct vsnfs_entry *);
 };
 
