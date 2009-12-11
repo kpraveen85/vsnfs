@@ -100,37 +100,8 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 	memcpy(&server->root_fh, resp, sizeof(struct vsnfs_fh));
 	vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s\n",
 		    server->root_fh.data);
-/*testing readdir - to be removed*/
-#if 0
-{
-	struct page *page = alloc_page(GFP_HIGHUSER);	
-	struct vsnfs_readdirargs arg = {
-		.fh = &(server->root_fh),
-		.count = 100,
-		.pages = &page,
-	};
-	struct rpc_message msg = {
-		.rpc_proc = &vsnfs_procedures[VSNFSPROC_READDIR],
-		.rpc_argp = &arg,
-		.rpc_cred = NULL,
-	};
-	int status;
 
-	status = rpc_call_sync(server->cl_rpcclient, &msg, 0);
-
-	if(status) {
-		vsnfs_trace(KERN_DEFAULT, "failure %d \n", status);
-		}
-	else
-		{
-		vsnfs_trace(KERN_DEFAULT, "success\n");
-		}
-	
-	__free_page(page);
-}
-#endif
-      out_rpcclient:
-
+out_rpcclient:
 	kfree(resp);
 	return ret;
 
@@ -157,7 +128,7 @@ static void vsnfs_umount_begin(struct super_block *sb)
 int vsnfs_write_inode(struct inode *inode, int sync)
 {
 	printk("Inside wrrite inode\n");
-	return EOPNOTSUPP;
+	return -EOPNOTSUPP;
 }
 
 void vsnfs_clear_inode(struct inode *inode)
@@ -283,11 +254,13 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 		inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->file_inode_ops;
 		if (fh->type == VSNFS_REG) {
 			inode->i_fop = &vsnfs_file_operations;
-			inode->i_mode = (S_IFREG | S_IALLUGO);
+			inode->i_mode = (S_IFREG | S_IRWXUGO);
+			inode->i_size = VSNFS_MAXDATA;
 		} else if (fh->type == VSNFS_DIR) {
 			inode->i_op = VSNFS_SB(sb)->cl_rpc_ops->dir_inode_ops;
 			inode->i_fop = &vsnfs_dir_operations;
 			inode->i_mode = (S_IFDIR | S_IALLUGO);
+			inode->i_size = VSNFS_DIRSIZE;
 			inode->i_nlink = 2;
 		} else {
 			vsnfs_trace(KERN_ERR,
@@ -305,14 +278,14 @@ struct inode *vsnfs_fhget(struct super_block *sb, struct vsnfs_fh *fh)
 	} else
 		vsnfs_trace(KERN_INFO, "Inode Found\n");
 
-	printk("VSNFS: nfs_fhget(%s/%Ld ct=%d)\n",
+	vsnfs_trace("VSNFS: nfs_fhget(%s/%Ld ct=%d)\n",
 	       inode->i_sb->s_id,
 	       (long long)VSNFS_FILEID(inode), atomic_read(&inode->i_count));
       out:
 	return inode;
 
       out_no_inode:
-	printk("vsnfs_fhget: iget failed\n");
+	vsnfs_trace("vsnfs_fhget: iget failed\n");
 	goto out;
 }
 

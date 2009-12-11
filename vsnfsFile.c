@@ -15,16 +15,12 @@
 #include "vsnfsClient.h"
 
 static int vsnfs_file_open(struct inode *, struct file *);
-static int vsnfs_file_read(struct kiocb *, const struct iovec *iov,
-			   unsigned long nr_segs, loff_t pos);
-static ssize_t vsnfs_file_write(struct kiocb *, const struct iovec *iov,
-				unsigned long nr_segs, loff_t pos);
+static ssize_t vsnfs_file_read(struct file *, char *, size_t, loff_t *);
+static ssize_t vsnfs_file_write(struct file *, const char *, size_t, loff_t *);
 
 const struct file_operations vsnfs_file_operations = {
-	.read = do_sync_read,
-	.write = do_sync_write,
-	.aio_write = vsnfs_file_read,
-	.aio_read = vsnfs_file_write,
+	.read = vsnfs_file_read,
+	.write = vsnfs_file_write,
 	.open = vsnfs_file_open,
 };
 
@@ -34,21 +30,23 @@ const struct inode_operations vsnfs_file_inode_operations = {
 
 static int vsnfs_file_open(struct inode *inode, struct file *filp)
 {
-	vsnfs_trace(KERN_INFO, "Inside file open\n");
 	return -EOPNOTSUPP;
 }
 
 static ssize_t
-vsnfs_file_read(struct kiocb *iocb, const struct iovec *iov,
-		unsigned long nr_segs, loff_t pos)
+vsnfs_file_read(struct file *file, char *buf, size_t count, loff_t *ppos)
 {
-	vsnfs_trace(KERN_INFO, "Inside file read\n");
-	return -EOPNOTSUPP;
+	struct dentry *dentry = file->f_dentry;
+	ssize_t result = 0;
+
+	vsnfs_trace(KERN_INFO, "vsnfs: read(%s/%s, %lu@%lu)\n",
+		dentry->d_parent->d_name.name, dentry->d_name.name,
+		(unsigned long) count, (unsigned long) *ppos);
+	return result;
 }
 
-static int
-vsnfs_file_write(struct kiocb *iocb, const struct iovec *iov,
-		 unsigned long nr_segs, loff_t pos)
+static ssize_t
+vsnfs_file_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
 {
 	vsnfs_trace(KERN_INFO, "Inside file write\n");
 	return -EOPNOTSUPP;
