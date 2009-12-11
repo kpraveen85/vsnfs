@@ -62,7 +62,7 @@ typedef struct {
     struct file*        file;
     struct page*        page;
     unsigned long       page_index;
-    u32*                ptr;
+    __be32*             ptr;
     u64                 target;
     struct vsnfs_entry* entry;
     decode_dirent_t     decode;
@@ -105,28 +105,38 @@ static
 int vsnfs_do_filldir(vsnfs_readdir_descriptor_t *desc, void *dirent,
            filldir_t filldir)
 {
+	struct file *file = desc->file;
     struct vsnfs_entry *entry = desc->entry;
     unsigned long fileid;
     unsigned int d_type;
-    int res;
+    int res, status;
 
-    for(;;) {
+	vsnfs_trace(KERN_ERR, "VSNFS: vsnfs_do_filldir() filling starting @ cookie %Lu\n", (long long)desc->target);
+
+	for(;;) {
+		status = dir_decode(desc);
+		if (status < 0) {
+			res = status;
+			goto out;
+		}
+
         fileid = entry->ino;
-        if (entry->fh->type == VSNFS_REG)
-            d_type = 8;
-        else if (entry->fh->type == VSNFS_DIR)
-            d_type = 4;
-        else
-            d_type = DT_UNKNOWN;
+        d_type = entry->fh->type;
+
         res = filldir(dirent, entry->name, entry->len, entry->offset, fileid, d_type);
+		if (res < 0) {
+			vsnfs_trace(KERN_ERR, "Filldir failed\n");
+			goto out;
+		}
 
-        if (res < 0)
-            break;
-        entry->offset++;
-        /* Need to add code here if we use cookie */
+		if (entry->eof == 1) {
+			file->f_pos = 4096;
+			break;
+		}
     }
-    dir_page_release(desc);
 
+    dir_page_release(desc);
+out:
     return res;
 }
 
@@ -179,6 +189,8 @@ vsnfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
     struct vsnfs_fh fh;
     long res;
 
+	if (filp->f_pos != 0)
+		return 0;
     memset(desc, 0, sizeof(*desc));
 
     desc->file = filp;
@@ -189,23 +201,18 @@ vsnfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
     my_entry.fh = &fh;
     desc->entry = &my_entry;
 
-    while(!desc->entry->eof) {
-        res = simple_readdir(desc, dirent, filldir);
-        if (res == -EBADCOOKIE) {
-            if (res >= 0)
-                continue;
-        }
 
-        if (res < 0)
-            break;
-    }
+	res = simple_readdir(desc, dirent, filldir);
+    if (res < 0)
+		goto out;
 
-    if (res > 0)
-        res = 0;
-    vsnfs_trace(KERN_INFO, "VSNFS: readdir(%s/%s) returns %ld\n",
-            dentry->d_parent->d_name.name, dentry->d_name.name,
-            res);
-    return res;
+	if (res > 0)
+		res = 0;
+out:
+	vsnfs_trace(KERN_INFO, "VSNFS: readdir(%s/%s) returns %ld\n",
+			dentry->d_parent->d_name.name, dentry->d_name.name, res);
+
+	return res;
 }
 
 static int
@@ -233,7 +240,7 @@ static struct dentry *vsnfs_lookup(struct inode *dir, struct dentry *dentry,
 		goto out;
 
 	ret = -ENOMEM;
-	dentry->d_op = &vsnfs_dentry_operations;
+	dentry->d_op = VSNFS_PROTO(dir)->dentry_ops;
 
 	ret = vsnfs_do_lookup(dir, &dentry->d_name, newfh);
 	if (ret == -ENOENT)
@@ -246,9 +253,10 @@ static struct dentry *vsnfs_lookup(struct inode *dir, struct dentry *dentry,
 	if (IS_ERR(inode))
 		goto out;
 
-      no_entry:
+no_entry:
 	ret = 0;
 	dentry = d_materialise_unique(dentry, inode);
+	
 	if (IS_ERR(dentry)) {
 		vsnfs_trace(KERN_ERR,
 			    "vsnfs_lookup:Error allocating dentry:%ld\n",
@@ -295,7 +303,7 @@ static int vsnfs_dentry_delete(struct dentry *dentry)
 
 static void vsnfs_dentry_iput(struct dentry *dentry, struct inode *inode)
 {
-	vsnfs_trace(KERN_INFO, "In dentry iput\n");
+	iput(inode);
 }
 
 int

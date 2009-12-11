@@ -18,12 +18,12 @@ int vsnfsd_fh_to_path(struct vsnfs_fh *fh, char *path, int len)
 {
 	/* TBD - remove the hardcoding once vsnfs_lookup_table is proper */
 	
-#ifdef VSNFS_DEBUG
+#if 0
     strcpy(path, "/temp");
 	return 0;	
 #endif	/*  */
 	    
-#if 0
+#if 1
 	struct vsnfs_lookup_table *node;
 	unsigned long ino = 0;
 	ino = simple_strtoul(fh->data, 0, 0);

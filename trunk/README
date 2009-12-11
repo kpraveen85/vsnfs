@@ -11,7 +11,7 @@ Index
 -----
 1 	Source structure
 2  	Installing the Module
- 2.1      Procedures we support
+2.1 Procedures we support
 3  	Design
 4	Coding style
 5	Extra credits
@@ -30,6 +30,7 @@ The source folder contains the following,
 
 2 Installing the Modules
 ------------------------
+Note that we have developed server and client as a loadable kernel module in linux kernel v2.6.31.6. The kernel configuration file is included in the name kernel.config in the top level directory.
 
 First compile the vsnfs server code and load that module. It will create a kernel 
 thread which would be listening for connections from the client. As of now we 
@@ -56,7 +57,7 @@ $ cat /proc/filesystems (To verify that the filesystem is registered)
 2.1 Procedures we support
 -------------------------
 
-a.) Mount Procedure
+A.) Mount Procedure
 Above steps are done with the assumption that client and server are going to run 
 in the same machine. It is possible to run server in a different machine than client. 
 While mounting please mention the IP address of the machine running the vsnfs server. 
@@ -67,13 +68,16 @@ Once all the above is successful we can mount the remote filesystem.
 $ sudo mount -t vsnfs 127.0.0.1:/tmp /mnt (Client, Server running in same machine)
 $ mount (To verify that our filesystem is successfully mounted)
 
-b.) Lookup Procedure
-We support -->lookup procedure. Our readdir is little flaky and hence "ls" might result 
-is listing 0 files. But if you know the file name in the mounted directory , you can 
-look it up
+B.) Lookup Procedure
+We support -->lookup procedure. The way we look test it is,
 
 $ls -il /mnt/sample/test/one.txt
 29387 -rwsrwsrwt 1 root root 0 Dec 31 1969 /mnt/sample/test/one.txt
+
+Any lookup related tests should pass.
+
+C.) Readdir Procedure
+We do support -->readdir procedure. We test it using "ls" and "cd" commands in the mounted directory.
 
 3 Design
 --------
