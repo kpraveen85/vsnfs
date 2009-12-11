@@ -1,8 +1,17 @@
+			Very Simple Network FileSystem [VSNFS]
+			--------------------------------------
+
+Introduction
+------------
+Very Simple Network FileSystem is a bare minimal Network Filesystem which allows access
+to files/directories in the remote system in the network. It is implemented on the
+Linux Kernel 2.6.31.6  
+
 Index
 -----
-1  	Source structure
+1 	Source structure
 2  	Installing the Module
-2.1 Procedures we support
+ 2.1      Procedures we support
 3  	Design
 4	Coding style
 5	Extra credits
@@ -13,15 +22,18 @@ Index
 The source folder contains the following,
 
 	- All code files related to VSNFS-client including the Makefile.
-	- A folder named "server" that contains files related to VSNFS-server, including
-	  its own makefile.
-	- A folder named "docs" that contains the documents related to the VSNFS project. The docs
-	  include the initial design document as well the final report.
+	- A folder named "server" that contains files related to VSNFS-server, 
+     	  including its own makefile.
+	- A folder named "docs" that contains the documents related to the 
+          VSNFS project. The docs include the initial design document as well 
+          the final report.
 
 2 Installing the Modules
 ------------------------
 
-First compile the vsnfs server code and load that module. It will create a kernel theread which would be listening for connections from the client. As of now we support only one client.
+First compile the vsnfs server code and load that module. It will create a kernel 
+thread which would be listening for connections from the client. As of now we 
+support only one client.
 
 From the top folder,
 
@@ -29,7 +41,9 @@ $ cd server
 $ make clean all
 $ sudo insmod vsnfsd.ko
 
-Now the server is running. Verify that using "rpcinfo -p". We have registered a RPC program with program number as 110003. Also do "ps -ef" and see if the [vsnfsd] kernel thread is running.
+Now the server is running. Verify that using "rpcinfo -p". We have registered a 
+RPC program with program number as 110003. Also do "ps -ef" and see if the 
+[vsnfsd] kernel thread is running.
 
 Now it is time to load the client.
 
@@ -43,15 +57,20 @@ $ cat /proc/filesystems (To verify that the filesystem is registered)
 -------------------------
 
 a.) Mount Procedure
-Above steps are done with the assumption that client and server are going to run in the same machine. It is possible to run server in a different machine than client. While mounting please mention the IP address of the machine running the vsnfs server. Right now we accept only IP addresses and not host names. 
+Above steps are done with the assumption that client and server are going to run 
+in the same machine. It is possible to run server in a different machine than client. 
+While mounting please mention the IP address of the machine running the vsnfs server. 
+Right now we accept only IP addresses and not host names. 
 
 Once all the above is successful we can mount the remote filesystem.
 
-$ sudo mount -t vsnfs 127.0.0.1:/tmp/ /mnt (Client, Server running in same machine)
+$ sudo mount -t vsnfs 127.0.0.1:/tmp /mnt (Client, Server running in same machine)
 $ mount (To verify that our filesystem is successfully mounted)
 
 b.) Lookup Procedure
-We support -->lookup procedure. Our readdir is little flaky and hence "ls" might result is listing 0 files. But if you know the file name in the mounted directory , you can look it up
+We support -->lookup procedure. Our readdir is little flaky and hence "ls" might result 
+is listing 0 files. But if you know the file name in the mounted directory , you can 
+look it up
 
 $ls -il /mnt/sample/test/one.txt
 29387 -rwsrwsrwt 1 root root 0 Dec 31 1969 /mnt/sample/test/one.txt
@@ -59,7 +78,9 @@ $ls -il /mnt/sample/test/one.txt
 3 Design
 --------
 
-Detailed design document is present in the docs folder. There we describe our design and implementation. This file is primarily intended to assist the evaluator to test the code.
+Detailed design document is present in the docs folder. There we describe our design 
+and implementation. This file is primarily intended to assist the evaluator to test 
+the code.
 
 4. Coding Style
 --------------
@@ -67,4 +88,5 @@ We comply with the Kernel Module coding style using lindent & checkpatch scripts
 
 5. Extra Credit
 ---------------
-We are communicating using eXternal Data Representation (XDR). This makes our code architecture independent.
+We are communicating using eXternal Data Representation (XDR). This makes our code 
+architecture independent.
