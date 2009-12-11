@@ -16,6 +16,7 @@ struct vsnfs_lookup_table vsnfs_lp_tab;
 /* returns 0 on success -1 on failure */ 
 int vsnfsd_fh_to_path(struct vsnfs_fh *fh, char *path, int len) 
 {
+	/* TBD - remove the hardcoding once vsnfs_lookup_table is proper */
 	
 #ifdef VSNFS_DEBUG
     strcpy(path, "/temp");
@@ -105,17 +106,25 @@ vsnfsd_proc_lookup(struct svc_rqst *rqstp, struct vsnfsd_lookupargs *argp,
 			     dentry->d_inode->i_ino);
 		snprintf(resp->data, VSNFS_FHSIZE, "%ld",
 			  dentry->d_inode->i_ino);
-		if (S_ISREG(dentry->d_inode->i_mode)) {
+		if (S_ISREG(dentry->d_inode->i_mode))
+ {
 			resp->type = VSNFS_REG;
-			  }
+			  
+}
 		else if (S_ISDIR(dentry->d_inode->i_mode)) {
 			resp->type = VSNFS_DIR;
-			len = strlen(path);
-			if (path[len - 1] != '/') {
-				path[len] = '/';
-				path[len + 1] = '\0';
-			}
-		}
+			
+len = strlen(path);
+			
+if (path[len - 1] != '/') {
+				
+path[len] = '/';
+				
+path[len + 1] = '\0';
+			
+}
+		
+}
        	        vsnfs_trace(KERN_DEFAULT, "PATH variable = %s : %d", path,
 				strlen(path));
 
@@ -214,7 +223,7 @@ vsnfsd_proc_readdir(struct svc_rqst *rqstp, struct vsnfsd_readdirargs *argp,
 		    struct vsnfsd_readdirres *resp) 
 {
 	int count;
-	__be32 nfserr;
+	__be32 vfserr;
 	vsnfs_trace(KERN_DEFAULT, "\n");
 	
     /* Shrink to the client read size */ 
@@ -231,13 +240,28 @@ vsnfsd_proc_readdir(struct svc_rqst *rqstp, struct vsnfsd_readdirargs *argp,
 	resp->err = vsnfs_ok;
 	
     /* Read directory and encode entries on the fly */ 
-    nfserr = vsnfsd_readdir(&argp->fh, resp);
+    vfserr = vsnfsd_readdir(&argp->fh, resp);
+
+	if(vfserr && resp->err == vsnfs_ok) {
+		/* some vfs error */
+		resp->err = vfserr;
+		vsnfs_trace(KERN_DEFAULT, "vfs error\n");
+		}
+	else if(vfserr)
+		{
+		/* some filldir erro resp->err would have been filled*/		
+		vsnfs_trace(KERN_DEFAULT, "filldir error\n");
+		}
+	else
+		{		
+		vsnfs_trace(KERN_DEFAULT, "everything fine\n");
+		}
 
     /* if everything had gone as expected at this point
        resp->buffer should contain encoded dir entries */ 
     resp->count = resp->buffer - argp->buffer;
 
-	return nfserr;
+	return vfserr;
 }
 
 

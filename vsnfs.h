@@ -52,6 +52,7 @@
 
 #define VSNFS_REG 		 1
 #define VSNFS_DIR		 2
+#define VSNFS_OTHER		 3
 
 /* vsnfs stats. These are the error codes that
  * are meaningful in RPC context

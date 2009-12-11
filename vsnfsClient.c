@@ -100,7 +100,35 @@ static int vsnfs_create_rpcclient(struct vsnfs_server *server)
 	memcpy(&server->root_fh, resp, sizeof(struct vsnfs_fh));
 	vsnfs_trace(KERN_DEFAULT, "success :-) inode : %s\n",
 		    server->root_fh.data);
+/*testing readdir - to be removed*/
+#if 0
+{
+	struct page *page = alloc_page(GFP_HIGHUSER);	
+	struct vsnfs_readdirargs arg = {
+		.fh = &(server->root_fh),
+		.count = 100,
+		.pages = &page,
+	};
+	struct rpc_message msg = {
+		.rpc_proc = &vsnfs_procedures[VSNFSPROC_READDIR],
+		.rpc_argp = &arg,
+		.rpc_cred = NULL,
+	};
+	int status;
 
+	status = rpc_call_sync(server->cl_rpcclient, &msg, 0);
+
+	if(status) {
+		vsnfs_trace(KERN_DEFAULT, "failure %d \n", status);
+		}
+	else
+		{
+		vsnfs_trace(KERN_DEFAULT, "success\n");
+		}
+	
+	__free_page(page);
+}
+#endif
       out_rpcclient:
 
 	kfree(resp);
