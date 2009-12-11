@@ -30,7 +30,9 @@ The source folder contains the following,
 
 2 Installing the Modules
 ------------------------
-Note that we have developed server and client as a loadable kernel module in linux kernel v2.6.31.6. The kernel configuration file is included in the name kernel.config in the top level directory.
+Note that we have developed server and client as a loadable kernel module in linux 
+kernel v2.6.31.6. The kernel configuration file is included in the name kernel.config 
+in the top level directory.
 
 First compile the vsnfs server code and load that module. It will create a kernel 
 thread which would be listening for connections from the client. As of now we 
