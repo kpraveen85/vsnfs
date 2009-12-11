@@ -110,7 +110,8 @@ static __be32 * encode_fh(__be32 * p, struct vsnfs_fh *fhp)
 	memcpy(p, fhp->data, VSNFS_FHSIZE);
 	return p + (VSNFS_FHSIZE >> 2);
 }
-int 
+
+int 
 vsnfssvc_encode_fhandle(struct svc_rqst *rqstp, __be32 * p,
 			struct vsnfs_fh *resp) 
 {
@@ -123,25 +124,17 @@ vsnfssvc_encode_readdirres(struct svc_rqst *rqstp, __be32 * p,
 			   struct vsnfsd_readdirres *resp) 
 {
 	vsnfs_trace(KERN_DEFAULT, "\n");
-	return 0;
 	
-	    /*continue from here */ 
-	    
-#if 0
-	    vsnfs_trace(KERN_DEFAULT, "\n");
-	
-	    /*nothing to return */ 
-	    xdr_ressize_check(rqstp, p);
+	/* nothing to return apart from pages */ 
+    xdr_ressize_check(rqstp, p);
 	p = resp->buffer;
 	
-	    /* all dir entries are filled on-the-fly.
-	       just mark no more entries and EOF flag */ 
-	    *p++ = 0;
-	*p++ = htonl((resp->common.err == nfserr_eof));
+    /* all dir entries are filled on-the-fly.
+       just mark no more entries and EOF flag */ 
+    *p++ = 0;
+	*p++ = htonl((resp->err == vsnfs_ok ));
 	rqstp->rq_res.page_len = (((unsigned long)p - 1) & ~PAGE_MASK) + 1;
-	return 1;
-	
-#endif	/*  */
+	return 1;	
 }
 
 
@@ -154,6 +147,8 @@ vsnfssvc_encode_entry(void *buf, const char *name, int namlen, loff_t offset,
 	struct vsnfsd_readdirres *res = (struct vsnfsd_readdirres *)buf;
 	__be32 * p = res->buffer;
 	int buflen, slen;
+	struct vsnfs_fh fh;
+	
 	vsnfs_trace(KERN_DEFAULT, "\n");
 	vsnfs_trace(KERN_DEFAULT, "%c %c %c\n", name[0], name[1], name[2]);
 	if (offset > ~((u32) 0)) {
@@ -166,8 +161,8 @@ vsnfssvc_encode_entry(void *buf, const char *name, int namlen, loff_t offset,
 		namlen = VSNFS_MAXNAMLEN;	/* truncate filename */
 	slen = XDR_QUADLEN(namlen);
 	
-	    /* -4 because 4 xdr words apart from string would be needed */ 
-	    if ((buflen = res->buflen - slen - 4) < 0) {
+    /* refer below code for -4 */ 
+    if ((buflen = res->buflen - slen - (5 + XDR_QUADLEN(VSNFS_FHSIZE))) < 0) {
 		res->err = vsnfserr_toosmall;
 		return -EINVAL;
 	}
@@ -175,18 +170,28 @@ vsnfssvc_encode_entry(void *buf, const char *name, int namlen, loff_t offset,
 		res->err = vsnfserr_fbig;
 		return -EINVAL;
 	}
-	*p++ = xdr_one;	/* mark entry present */
-	*p++ = htonl((u32) ino);	/* file id */
-	p = xdr_encode_array(p, name, namlen);	/* name length & name */
+
+	/* -------------imp for client-----------------*/
+	*p++ = xdr_one;	/* mark entry present --> -1 for this*/
+	*p++ = htonl((u32) ino);	/* file id --> -1 for this*/
+	p = xdr_encode_array(p, name, namlen);	/* name length & name --> -1 for name length*/
 	
-	    /* remember pointer so that the field can be filled in the next pass */ 
-	    res->offset = p;
-	*p++ = htonl(~0U);	/* offset of next entry - invalid as of now */
-	
-	    /* update buffer content */ 
-	    res->buflen = buflen;
+	/*adding file handle as well - nasty op!*/	
+	snprintf(fh.data, VSNFS_FHSIZE, "%ld", (long int)ino);
+	fh.type = (int)d_type;
+	/* TO DO - check the return value */
+	p = encode_fh(p, &fh); /* -(XDR_QUADLEN(VSNFS_FHSIZE)) for this */
+	*p++ = htonl(fh.type); /* -1 for this */
+
+    /* remember pointer so that the field can be filled in the next pass */ 
+    res->offset = p;
+	*p++ = htonl(~0U);	/* offset of next entry - invalid as of now ---> -1 for this*/
+	/* -------------imp for client-----------------*/
+
+    /* update buffer content */ 
+    res->buflen = buflen;
 	res->buffer = p;
-	res->err = vsnfs_ok;
+	//res->err = vsnfs_ok;
 	return 0;
 }
 

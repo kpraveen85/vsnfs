@@ -72,9 +72,9 @@ __be32 vsnfsd_close(struct file * filp)
  */ 
 __be32  vsnfsd_readdir(struct vsnfs_fh * fhp, void *buf)
 {
-	__be32 err;
+	__be32 err = vsnfs_ok;
 	struct file *file;
-	
+		
 	int ret;
 	err = vsnfsd_open(fhp, &file, O_RDONLY);
 	if (err)
@@ -86,7 +86,7 @@ __be32  vsnfsd_readdir(struct vsnfs_fh * fhp, void *buf)
        goto out_close;
        } */ 
 	    
-    //err = nfsd_buffered_readdir(file, func, cdp, offsetp);
+    //err = nfsd_buffered_readdir(file, func, cdp, offsetp);   
     ret = vfs_readdir(file, vsnfssvc_encode_entry, buf);
 	if (ret < 0) {
 		err = vsnfserrno(ret);

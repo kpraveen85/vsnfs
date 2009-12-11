@@ -26,6 +26,7 @@
 #define VSNFS_nullargs_sz		(1)	/*check this part */
 #define VSNFS_getrootargs_sz            (VSNFS_path_sz)
 #define VSNFS_lookupargs_sz             (VSNFS_fhandle_sz+VSNFS_path_sz)
+/*1 for type and 1 for count*/
 #define	VSNFS_readdirargs_sz	        (VSNFS_fhandle_sz+2)
 /* 1 for status and 1 for type */
 #define VSNFS_fh_sz             (1+VSNFS_fhandle_sz+1)
@@ -183,10 +184,28 @@ static int vsnfs_xdr_fh(struct rpc_rqst *req, __be32 * p, struct vsnfs_fh *fh)
  * from nfs_readdir for each entry.
  */
 static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
-{
-	/* TBD */
+{	
+	int status;
+
 	vsnfs_trace(KERN_DEFAULT, "\n");
+
+	if ((status = ntohl(*p++)))
+		return vsnfs_stat_to_errno(status);
+	/* TBD remove it - test code */	
+#if 0
+{	
+	struct vsnfs_entry entry;
+	__be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry);
+
+	do {
+		p = vsnfs_decode_dirent(p, &entry);
+		} while(!entry.eof);
+	return 1;
+}
+#endif
+	
 	return 0;
+	/* TBD check the below code */
 #if 0
 	struct xdr_buf *rcvbuf = &req->rq_rcv_buf;
 	struct kvec *iov = rcvbuf->head;
@@ -274,11 +293,14 @@ static int vsnfs_xdr_readdirres(struct rpc_rqst *req, __be32 * p, void *dummy)
 
 __be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry)
 {
+	vsnfs_trace(KERN_DEFAULT, "\n");
+	
 	if (!*p++) {
-		if (!*p)
-			return ERR_PTR(-EAGAIN);
-		entry->eof = 1;
-		return ERR_PTR(-EBADCOOKIE);
+		/*if (!*p)
+			return ERR_PTR(-EAGAIN);*/
+		entry->eof = 1;		
+		return ERR_PTR(-EBADCOOKIE); /* shouldn't it be __be32 type? -- check and fix it */
+		
 	}
 
 	entry->ino = ntohl(*p++);
@@ -286,8 +308,12 @@ __be32 *vsnfs_decode_dirent(__be32 * p, struct vsnfs_entry *entry)
 	entry->name = (const char *)p;
 	p += XDR_QUADLEN(entry->len);
 //	entry->prev_cookie = entry->cookie;
-//	entry->cookie = ntohl(*p++);
+
+	p = xdr_decode_fhandle(p,entry->fh); /* the caller should be the owner of fh */
+	entry->offset = ntohl(*p++);
 	entry->eof = !p[0] && p[1];
+
+	vsnfs_trace(KERN_DEFAULT, "ino:%d name:%c eof:%d\n",(int)entry->ino, entry->name[0] , entry->eof);
 
 	return p;
 }
